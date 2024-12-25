@@ -230,7 +230,6 @@ static GLFWbool chooseEGLConfig(const _GLFWctxconfig* ctxconfig,
 
 static void makeContextCurrentEGL(_GLFWwindow* window) {
     if (window) {
-        printf("eglMakeCurrent window=%p\n", window);
         if (!eglMakeCurrent(_glfw.egl.display,
             window->context.egl.surface,
             window->context.egl.surface,
@@ -241,7 +240,6 @@ static void makeContextCurrentEGL(_GLFWwindow* window) {
             return;
         }
     } else {
-        printf("eglMakeCurrent NULL window=%p\n", window);
         if (!eglMakeCurrent(_glfw.egl.display,
             EGL_NO_SURFACE,
             EGL_NO_SURFACE,
@@ -291,34 +289,25 @@ static void swapBuffersEGL(_GLFWwindow* window) {
     int ret;
 
     if (_glfw.kmsdrm.gbm.surface) {
-        puts("eglSwapBuffers");
         if (!eglSwapBuffers(_glfw.egl.display, window->context.egl.surface)) {
             printf("eglSwapBuffers error.\n");
             return;
         }
-        puts("gbm_surface_lock_front_buffer");
         next_bo = gbm_surface_lock_front_buffer(_glfw.kmsdrm.gbm.surface);
         if (!next_bo) {
             printf("gbm_surface_lock_front_buffer error.\n");
             return;
         }
     }
-    puts("drm_fb_get_from_bo");
     _glfw.kmsdrm.gbm.fb = drm_fb_get_from_bo(next_bo);
     if (!_glfw.kmsdrm.gbm.fb) {
         printf("Failed to get a new framebuffer BO\n");
         return;
     }
 
-    /*
-     * Here you could also update drm plane layers if you want
-     * hw composition
-     */
-     // printf("_glfw.kmsdrm.drm.fd=%d _glfw.kmsdrm.drm.crtc_id=%d _glfw.kmsdrm.gbm.fb->fb_id=%d\n", _glfw.kmsdrm.drm.fd, _glfw.kmsdrm.drm.crtc_id, _glfw.kmsdrm.gbm.fb->fb_id);
-    puts("drmModePageFlip");
+    // Here you could also update drm plane layers if you want hw composition
     ret = drmModePageFlip(_glfw.kmsdrm.drm.fd, _glfw.kmsdrm.drm.crtc_id, _glfw.kmsdrm.gbm.fb->fb_id, DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
     if (ret) {
-        // printf("failed to queue page flip: %s\n", strerror(errno));
         printf("failed to queue page flip\n");
         return;
     }
@@ -339,13 +328,11 @@ static void swapBuffersEGL(_GLFWwindow* window) {
             printf("user interrupted!\n");
             return;
         }
-        puts("drmHandleEvent");
         drmHandleEvent(_glfw.kmsdrm.drm.fd, &evctx);
     }
 
     /* release last buffer to render on again: */
     if (_glfw.kmsdrm.gbm.surface) {
-        puts("gbm_surface_release_buffer");
         gbm_surface_release_buffer(_glfw.kmsdrm.gbm.surface, _glfw.kmsdrm.gbm.bo);
     }
     _glfw.kmsdrm.gbm.bo = next_bo;
@@ -355,7 +342,6 @@ static void swapBuffersEGL(_GLFWwindow* window) {
 }
 
 static void swapIntervalEGL(int interval) {
-    puts("eglSwapInterval");
     eglSwapInterval(_glfw.egl.display, interval);
 }
 
@@ -413,7 +399,6 @@ static void destroyContextEGL(_GLFWwindow* window) {
 // Initialize EGL
 //
 GLFWbool _glfwInitEGL(void) {
-    // printf("egl_context.c:%d: _glfwInitEGL BEGIN\n", __LINE__);
     int i;
     EGLint* attribs = NULL;
     const char* extensions;
@@ -548,17 +533,9 @@ GLFWbool _glfwInitEGL(void) {
     _glfw.egl.platform = _glfw.platform.getEGLPlatform(&attribs);
     // printf("EGL platform=0x%08X\n", _glfw.egl.platform);
     if (_glfw.egl.platform) {
-        puts("eglGetPlatformDisplayEXT");
         _glfw.egl.display = eglGetPlatformDisplayEXT(_glfw.egl.platform, _glfw.platform.getEGLNativeDisplay(), attribs);
-        // printf("=====================================\n");
-        // printf("eglGetPlatformDisplayEXT(getEGLNativeDisplay/gbm.dev=%p) => egl.display=%p\n", _glfw.platform.getEGLNativeDisplay(), _glfw.egl.display);
-        // printf("=====================================\n");
     } else {
-        puts("eglGetDisplay");
         _glfw.egl.display = eglGetDisplay(_glfw.platform.getEGLNativeDisplay());
-        // printf("=====================================\n");
-        // printf("eglGetDisplay(getEGLNativeDisplay/gbm.dev=%p) => egl.display=%p\n", _glfw.platform.getEGLNativeDisplay(), _glfw.egl.display);
-        // printf("=====================================\n");
     }
 
     _glfw_free(attribs);
@@ -571,7 +548,6 @@ GLFWbool _glfwInitEGL(void) {
         _glfwTerminateEGL();
         return GLFW_FALSE;
     }
-    puts("eglInitialize");
     if (!eglInitialize(_glfw.egl.display, &_glfw.egl.major, &_glfw.egl.minor)) {
         _glfwInputError(GLFW_API_UNAVAILABLE,
             "EGL: Failed to initialize EGL: %s",
@@ -646,7 +622,6 @@ GLFWbool _glfwCreateContextEGL(_GLFWwindow* window,
         return GLFW_FALSE;
 
     if (ctxconfig->client == GLFW_OPENGL_ES_API) {
-        puts("eglBindAPI");
         if (!eglBindAPI(EGL_OPENGL_ES_API)) {
             _glfwInputError(GLFW_API_UNAVAILABLE,
                 "EGL: Failed to bind OpenGL ES: %s",
@@ -654,7 +629,6 @@ GLFWbool _glfwCreateContextEGL(_GLFWwindow* window,
             return GLFW_FALSE;
         }
     } else {
-        puts("eglBindAPI");
         if (!eglBindAPI(EGL_OPENGL_API)) {
             _glfwInputError(GLFW_API_UNAVAILABLE,
                 "EGL: Failed to bind OpenGL: %s",
@@ -722,7 +696,6 @@ GLFWbool _glfwCreateContextEGL(_GLFWwindow* window,
     }
 
     SET_ATTRIB(EGL_NONE, EGL_NONE);
-    puts("eglCreateContext");
     window->context.egl.handle = eglCreateContext(_glfw.egl.display, config, share, attribs);
     if (window->context.egl.handle == EGL_NO_CONTEXT) {
         _glfwInputError(GLFW_VERSION_UNAVAILABLE,
@@ -733,7 +706,6 @@ GLFWbool _glfwCreateContextEGL(_GLFWwindow* window,
 
     // _glfw.egl.egl_swapinterval = 1;
 
-    // printf("src/egl_context.c %d: ", __LINE__);
     EGLint red_size, green_size, blue_size, alpha_size, depth_size, stencil_size, surface_type, render_type;
     eglGetConfigAttrib(_glfw.egl.display, config, EGL_RED_SIZE, &red_size);
     eglGetConfigAttrib(_glfw.egl.display, config, EGL_GREEN_SIZE, &green_size);
