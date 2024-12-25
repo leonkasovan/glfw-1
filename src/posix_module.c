@@ -34,18 +34,17 @@
 //////                       GLFW platform API                      //////
 //////////////////////////////////////////////////////////////////////////
 
-void* _glfwPlatformLoadModule(const char* path)
-{
+void* _glfwPlatformLoadModule(const char* path) {
+    // printf("_glfwPlatformLoadModule: path=%s\n", path);
     return dlopen(path, RTLD_LAZY | RTLD_LOCAL);
 }
 
-void _glfwPlatformFreeModule(void* module)
-{
+void _glfwPlatformFreeModule(void* module) {
     dlclose(module);
 }
 
-GLFWproc _glfwPlatformGetModuleSymbol(void* module, const char* name)
-{
+GLFWproc _glfwPlatformGetModuleSymbol(void* module, const char* name) {
+    // printf("_glfwPlatformGetModuleSymbol: name=%s\n", name);
     return dlsym(module, name);
 }
 

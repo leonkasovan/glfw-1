@@ -17,7 +17,7 @@ string(COMPARE EQUAL "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}" GLFW_ST
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" ${GLFW_STANDALONE})
 option(GLFW_BUILD_TESTS "Build the GLFW test programs" ${GLFW_STANDALONE})
-option(GLFW_BUILD_DOCS "Build the GLFW documentation" ON)
+option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
 option(GLFW_INSTALL "Generate installation target" ON)
 
 include(GNUInstallDirs)
@@ -36,6 +36,7 @@ cmake_dependent_option(GLFW_BUILD_WIN32 "Build support for Win32" ON "WIN32" OFF
 cmake_dependent_option(GLFW_BUILD_COCOA "Build support for Cocoa" ON "APPLE" OFF)
 cmake_dependent_option(GLFW_BUILD_X11 "Build support for X11" ON "UNIX;NOT APPLE" OFF)
 cmake_dependent_option(GLFW_BUILD_WAYLAND "Build support for Wayland" ON "UNIX;NOT APPLE" OFF)
+cmake_dependent_option(GLFW_BUILD_KMSDRM "Build support for KMSDRM" ON "UNIX;NOT APPLE" OFF)
 
 cmake_dependent_option(GLFW_USE_HYBRID_HPG "Force use of high-performance GPU on hybrid systems" OFF
                        "WIN32" OFF)
@@ -73,6 +74,9 @@ if (GLFW_BUILD_WAYLAND)
 endif()
 if (GLFW_BUILD_X11)
     message(STATUS "Including X11 support")
+endif()
+if (GLFW_BUILD_KMSDRM)
+    message(STATUS "Including KMSDRM support")
 endif()
 
 #--------------------------------------------------------------------

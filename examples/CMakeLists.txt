@@ -1,5 +1,9 @@
 
 link_libraries(glfw)
+if (GLFW_BUILD_KMSDRM)
+    link_libraries(gbm)
+    link_libraries(drm)
+endif()
 
 include_directories("${GLFW_SOURCE_DIR}/deps")
 
@@ -42,6 +46,7 @@ if (RT_LIBRARY)
     target_link_libraries(particles "${RT_LIBRARY}")
 endif()
 
+#set(GUI_ONLY_BINARIES gears heightmap particles sharing splitview boing
 set(GUI_ONLY_BINARIES boing gears heightmap particles sharing splitview
     triangle-opengl triangle-opengles wave windows)
 set(CONSOLE_BINARIES offscreen)

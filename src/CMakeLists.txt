@@ -56,7 +56,14 @@ if (GLFW_BUILD_WAYLAND)
                                 wl_monitor.c wl_window.c xkb_unicode.c)
 endif()
 
-if (GLFW_BUILD_X11 OR GLFW_BUILD_WAYLAND)
+if (GLFW_BUILD_KMSDRM)
+    link_libraries(gbm)
+    target_compile_definitions(glfw PRIVATE _GLFW_KMSDRM)
+    target_sources(glfw PRIVATE wl_platform.h xkb_unicode.h kmsdrm_init.c
+                                kmsdrm_monitor.c kmsdrm_window.c xkb_unicode.c)
+endif()
+
+if (GLFW_BUILD_X11 OR GLFW_BUILD_WAYLAND OR GLFW_BUILD_KMSDRM)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         target_sources(glfw PRIVATE linux_joystick.h linux_joystick.c)
     endif()

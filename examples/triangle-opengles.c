@@ -34,8 +34,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-typedef struct Vertex
-{
+typedef struct Vertex {
     vec2 pos;
     vec3 col;
 } Vertex;
@@ -48,12 +47,21 @@ static const Vertex vertices[3] =
 };
 
 static const char* vertex_shader_text =
-"#version 100\n"
+"#version 310 es\n"
 "precision mediump float;\n"
+"#if __VERSION__ >= 130\n"
+"#define COMPAT_VARYING out\n"
+"#define COMPAT_ATTRIBUTE in\n"
+"#define COMPAT_TEXTURE texture\n"
+"#else\n"
+"#define COMPAT_VARYING varying \n"
+"#define COMPAT_ATTRIBUTE attribute \n"
+"#define COMPAT_TEXTURE texture2D\n"
+"#endif\n"
 "uniform mat4 MVP;\n"
-"attribute vec3 vCol;\n"
-"attribute vec2 vPos;\n"
-"varying vec3 color;\n"
+"COMPAT_ATTRIBUTE vec3 vCol;\n"
+"COMPAT_ATTRIBUTE vec2 vPos;\n"
+"COMPAT_VARYING vec3 color;\n"
 "void main()\n"
 "{\n"
 "    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
@@ -61,27 +69,53 @@ static const char* vertex_shader_text =
 "}\n";
 
 static const char* fragment_shader_text =
-"#version 100\n"
+"#version 310 es\n"
 "precision mediump float;\n"
-"varying vec3 color;\n"
+"#if __VERSION__ >= 130\n"
+"#define COMPAT_VARYING in\n"
+"#define COMPAT_TEXTURE texture\n"
+"out vec4 FragColor;\n"
+"#else\n"
+"#define COMPAT_VARYING varying\n"
+"#define FragColor gl_FragColor\n"
+"#define COMPAT_TEXTURE texture2D\n"
+"#endif\n"
+"COMPAT_VARYING vec3 color;\n"
 "void main()\n"
 "{\n"
-"    gl_FragColor = vec4(color, 1.0);\n"
+"    FragColor = vec4(color, 1.0);\n"
 "}\n";
 
-static void error_callback(int error, const char* description)
-{
+// Function to Compile Shader
+GLuint compileShader(GLenum type, const char* source) {
+    GLuint shader = glCreateShader(type);
+    glShaderSource(shader, 1, &source, NULL);
+    glCompileShader(shader);
+
+    GLint compiled;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+    if (!compiled) {
+        char log[512];
+        glGetShaderInfoLog(shader, 512, NULL, log);
+        printf("Error compiling shader: %s\n", log);
+        exit(EXIT_FAILURE);
+    } else {
+        printf("compiling shader ok: %d\n", shader);
+    }
+
+    return shader;
+}
+
+static void error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error: %s\n", description);
 }
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
-int main(void)
-{
+int main(void) {
     glfwSetErrorCallback(error_callback);
 
     if (!glfwInit())
@@ -91,37 +125,49 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-
-    GLFWwindow* window = glfwCreateWindow(640, 480, "OpenGL ES 2.0 Triangle (EGL)", NULL, NULL);
-    if (!window)
-    {
-        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
-        window = glfwCreateWindow(640, 480, "OpenGL ES 2.0 Triangle", NULL, NULL);
-        if (!window)
-        {
-            glfwTerminate();
-            exit(EXIT_FAILURE);
-        }
+    GLFWwindow* window = glfwCreateWindow(1920, 1080, "OpenGL ES 2.0 Triangle (EGL)", NULL, NULL);
+    if (!window) {
+        // glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
+        // printf("examples/triangle-opengles.c:%d: GLFW_NATIVE_CONTEXT_API\n", __LINE__);
+        // window = glfwCreateWindow(640, 480, "OpenGL ES 2.0 Triangle", NULL, NULL);
+        // if (!window) {
+        //     printf("glfwCreateWindow2 failed too\n");
+        //     glfwTerminate();
+        //     // exit(EXIT_FAILURE);
+        //     return GLFW_FALSE;
+        // } else {
+        //     printf("glfwCreateWindow2 succed\n");
+        // }
+        return GLFW_FALSE;
+    } else {
+        printf("glfwCreateWindow1 succed\n");
     }
+    // printf("examples/triangle-opengles.c: %d\n", __LINE__);
 
     glfwSetKeyCallback(window, key_callback);
+    // printf("examples/triangle-opengles.c: %d\n", __LINE__);
 
     glfwMakeContextCurrent(window);
-    gladLoadGLES2(glfwGetProcAddress);
+    // printf("examples/triangle-opengles.c: %d\n", __LINE__);
+    int version = gladLoadGLES2(glfwGetProcAddress);
+    printf("examples/triangle-opengles.c: version=%d\n", version);
     glfwSwapInterval(1);
+    // printf("examples/triangle-opengles.c: %d\n", __LINE__);
 
     GLuint vertex_buffer;
     glGenBuffers(1, &vertex_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
-    glCompileShader(vertex_shader);
+    const GLuint vertex_shader = compileShader(GL_VERTEX_SHADER, vertex_shader_text);
+    // const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    // glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
+    // glCompileShader(vertex_shader);
 
-    const GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
-    glCompileShader(fragment_shader);
+    const GLuint fragment_shader = compileShader(GL_FRAGMENT_SHADER, fragment_shader_text);
+    // const GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    // glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
+    // glCompileShader(fragment_shader);
 
     const GLuint program = glCreateProgram();
     glAttachShader(program, vertex_shader);
@@ -135,14 +181,14 @@ int main(void)
     glEnableVertexAttribArray(vpos_location);
     glEnableVertexAttribArray(vcol_location);
     glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
-                          sizeof(Vertex), (void*) offsetof(Vertex, pos));
+        sizeof(Vertex), (void*) offsetof(Vertex, pos));
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(Vertex), (void*) offsetof(Vertex, col));
-
-    while (!glfwWindowShouldClose(window))
-    {
+        sizeof(Vertex), (void*) offsetof(Vertex, col));
+    // printf("examples/triangle-opengles.c: %d\n", __LINE__);
+    while (!glfwWindowShouldClose(window)) {
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
+        // printf("window=%dx%d\n", width, height);
         const float ratio = width / (float) height;
 
         glViewport(0, 0, width, height);
@@ -158,8 +204,10 @@ int main(void)
         glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) &mvp);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
+        // printf("examples/triangle-opengles.c: %d\n", __LINE__);
         glfwSwapBuffers(window);
         glfwPollEvents();
+        // printf("examples/triangle-opengles.c: %d\n", __LINE__);
     }
 
     glfwDestroyWindow(window);

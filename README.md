@@ -63,6 +63,11 @@ for all supported compilers on Windows and macOS.
 See the [compilation guide](https://www.glfw.org/docs/latest/compile.html) for
 more information about how to compile GLFW yourself.
 
+```
+cmake -B build -D GLFW_BUILD_X11=0 -D GLFW_BUILD_WAYLAND=0 -D GLFW_BUILD_KMSDRM=1 .
+make -j8 -C build
+```
+
 
 ## Using GLFW
 

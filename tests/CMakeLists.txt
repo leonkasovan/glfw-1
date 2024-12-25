@@ -1,5 +1,9 @@
 
 link_libraries(glfw)
+if (GLFW_BUILD_KMSDRM)
+    link_libraries(gbm)
+    link_libraries(drm)
+endif()
 
 include_directories("${GLFW_SOURCE_DIR}/deps")
 

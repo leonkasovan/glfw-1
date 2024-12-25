@@ -1,0 +1,331 @@
+//========================================================================
+// KMSDRM - A platform for GLFW based on Kernel Mode Setting (KMS) and Direct Rendering Manager (DRM)
+//------------------------------------------------------------------------
+// #include <xf86drm.h>
+#include <xf86drmMode.h>
+#include <gbm.h>
+
+#define GLFW_KMSDRM_WINDOW_STATE          _GLFWwindowKMSDRM kmsdrm;
+#define GLFW_KMSDRM_LIBRARY_WINDOW_STATE  _GLFWlibraryKMSDRM kmsdrm;
+#define GLFW_KMSDRM_MONITOR_STATE         _GLFWmonitorKMSDRM kmsdrm;
+
+#define GLFW_KMSDRM_CONTEXT_STATE
+#define GLFW_KMSDRM_CURSOR_STATE
+#define GLFW_KMSDRM_LIBRARY_CONTEXT_STATE
+
+#ifndef DRM_CAP_ASYNC_PAGE_FLIP
+#define DRM_CAP_ASYNC_PAGE_FLIP 7
+#endif
+
+#ifndef DRM_MODE_PAGE_FLIP_ASYNC
+#define DRM_MODE_PAGE_FLIP_ASYNC    2
+#endif
+
+typedef struct SDL_VideoDevice {
+    /* The name of this video driver */
+    const char* name;
+
+    /* * * */
+    /*
+     * Shaped-window functions
+     */
+     // SDL_ShapeDriver shape_driver;
+
+     /* * * */
+     /* Data common to all drivers */
+     // SDL_threadID thread;
+    bool checked_texture_framebuffer;
+    bool is_dummy;
+    bool suspend_screensaver;
+    // SDL_Window* wakeup_window;
+    // SDL_mutex* wakeup_lock; /* Initialized only if WaitEventTimeout/SendWakeupEvent are supported */
+    int num_displays;
+    // SDL_VideoDisplay* displays;
+    // SDL_Window* windows;
+    // SDL_Window* grabbed_window;
+    uint8_t window_magic;
+    uint32_t next_object_id;
+    char* clipboard_text;
+    char* primary_selection_text;
+    bool setting_display_mode;
+    uint32_t quirk_flags;
+
+    /* * * */
+    /* Data used by the GL drivers */
+    struct {
+        int red_size;
+        int green_size;
+        int blue_size;
+        int alpha_size;
+        int depth_size;
+        int buffer_size;
+        int stencil_size;
+        int double_buffer;
+        int accum_red_size;
+        int accum_green_size;
+        int accum_blue_size;
+        int accum_alpha_size;
+        int stereo;
+        int multisamplebuffers;
+        int multisamplesamples;
+        int floatbuffers;
+        int accelerated;
+        int major_version;
+        int minor_version;
+        int flags;
+        int profile_mask;
+        int share_with_current_context;
+        int release_behavior;
+        int reset_notification;
+        int framebuffer_srgb_capable;
+        int no_error;
+        int retained_backing;
+        int driver_loaded;
+        char driver_path[256];
+        void* dll_handle;
+    } gl_config;
+
+    /* * * */
+    /* Cache current GL context; don't call the OS when it hasn't changed. */
+    /* We have the global pointers here so Cocoa continues to work the way
+       it always has, and the thread-local storage for the general case.
+     */
+     // SDL_Window *current_glwin;
+     // SDL_GLContext current_glctx;
+     // SDL_TLSID current_glwin_tls;
+     // SDL_TLSID current_glctx_tls;
+
+     /* Flag that stores whether it's allowed to call SDL_GL_MakeCurrent()
+      * with a NULL window, but a non-NULL context. (Not allowed in most cases,
+      * except on EGL under some circumstances.) */
+    bool gl_allow_no_surface;
+
+
+    /* * * */
+    /* Data private to this driver */
+    void* driverdata;
+    struct SDL_GLDriverData* gl_data;
+
+#ifdef SDL_VIDEO_OPENGL_EGL
+    struct SDL_EGL_VideoData* egl_data;
+#endif
+
+#if defined(SDL_VIDEO_OPENGL_ES) || defined(SDL_VIDEO_OPENGL_ES2)
+    struct SDL_PrivateGLESData* gles_data;
+#endif
+} SDL_VideoDevice;
+
+typedef struct {
+    uint32_t format;              /**< pixel format */
+    int w;                      /**< width, in screen coordinates */
+    int h;                      /**< height, in screen coordinates */
+    int refresh_rate;           /**< refresh rate (or zero for unspecified) */
+    void* driverdata;           /**< driver-specific data, initialize to 0 */
+} SDL_DisplayMode;
+
+typedef enum {
+    SDL_ORIENTATION_UNKNOWN,            /**< The display orientation can't be determined */
+    SDL_ORIENTATION_LANDSCAPE,          /**< The display is in landscape mode, with the right side up, relative to portrait mode */
+    SDL_ORIENTATION_LANDSCAPE_FLIPPED,  /**< The display is in landscape mode, with the left side up, relative to portrait mode */
+    SDL_ORIENTATION_PORTRAIT,           /**< The display is in portrait mode */
+    SDL_ORIENTATION_PORTRAIT_FLIPPED    /**< The display is in portrait mode, upside down */
+} SDL_DisplayOrientation;
+
+typedef struct SDL_VideoData {
+    int devindex;     /* device index that was passed on creation */
+    int drm_fd;       /* DRM file desc */
+    char devpath[32]; /* DRM dev path. */
+
+    struct gbm_device* gbm_dev;
+
+    bool video_init;             /* Has VideoInit succeeded? */
+    bool vulkan_mode;            /* Are we in Vulkan mode? One VK window is enough to be. */
+    bool async_pageflip_support; /* Does the hardware support async. pageflips? */
+
+    // SDL_Window** windows;
+    int max_windows;
+    int num_windows;
+
+    /* Even if we have several displays, we only have to
+       open 1 FD and create 1 gbm device. */
+    bool gbm_init;
+
+} SDL_VideoData;
+
+typedef struct SDL_DisplayModeData {
+    int mode_index;
+} SDL_DisplayModeData;
+
+typedef struct SDL_DisplayData {
+    drmModeConnector* connector;
+    drmModeCrtc* crtc;
+    drmModeModeInfo mode;
+    drmModeModeInfo original_mode;
+    drmModeModeInfo fullscreen_mode;
+
+    drmModeCrtc* saved_crtc; /* CRTC to restore on quit */
+    bool saved_vrr;
+
+    /* DRM & GBM cursor stuff lives here, not in an SDL_Cursor's driverdata struct,
+       because setting/unsetting up these is done on window creation/destruction,
+       where we may not have an SDL_Cursor at all (so no SDL_Cursor driverdata).
+       There's only one cursor GBM BO because we only support one cursor. */
+    struct gbm_bo* cursor_bo;
+    int cursor_bo_drm_fd;
+    uint64_t cursor_w, cursor_h;
+
+    bool default_cursor_init;
+} SDL_DisplayData;
+
+typedef struct SDL_WindowData {
+    SDL_VideoData* viddata;
+    /* SDL internals expect EGL surface to be here, and in KMSDRM the GBM surface is
+       what supports the EGL surface on the driver side, so all these surfaces and buffers
+       are expected to be here, in the struct pointed by SDL_Window driverdata pointer:
+       this one. So don't try to move these to dispdata!  */
+    struct gbm_surface* gs;
+    struct gbm_bo* bo;
+    struct gbm_bo* next_bo;
+
+    bool waiting_for_flip;
+    bool double_buffer;
+
+    EGLSurface egl_surface;
+    bool egl_surface_dirty;
+} SDL_WindowData;
+
+typedef struct KMSDRM_FBInfo {
+    int drm_fd;     /* DRM file desc */
+    uint32_t fb_id; /* DRM framebuffer ID */
+} KMSDRM_FBInfo;
+
+struct options {
+    const char* device;
+    char mode[DRM_DISPLAY_MODE_LEN];
+    uint32_t format;
+    uint64_t modifier;
+    int connector;
+    bool async_page_flip;
+    bool atomic_drm_mode;
+    bool surfaceless;
+    unsigned int vrefresh;
+    unsigned int frames;
+};
+
+typedef struct _GLFWwindowKMSDRM {
+    int             xpos;
+    int             ypos;
+    int             width;
+    int             height;
+    GLFWbool        visible;
+    GLFWbool        iconified;
+    GLFWbool        maximized;
+    GLFWbool        resizable;
+    GLFWbool        decorated;
+    GLFWbool        floating;
+    GLFWbool        transparent;
+    float           opacity;
+
+    // KMS specific
+    int             fb_id;        // Framebuffer ID
+} _GLFWwindowKMSDRM;
+
+// KMS-specific per-monitor data
+//
+typedef struct _GLFWmonitorKMSDRM {
+    drmModeModeInfo mode;           // Selected mode (resolution, refresh rate)
+} _GLFWmonitorKMSDRM;
+
+// KMS-specific global data
+//
+typedef struct _GLFWlibraryKMSDRM {
+    int             drm_fd;       // DRM file desc
+    drmModeConnector* connector; // 
+    drmModeEncoder* encoder; // int connector_id (DRM connector ID) int crtc_id (CRTC controller ID)
+    bool async_pageflip_support;
+    struct gbm_device* gbm;
+    struct gbm_surface* surface;
+    struct gbm_bo* bo;
+    struct gbm_bo* next_bo;
+    bool waiting_for_flip;
+} _GLFWlibraryKMSDRM;
+
+// Functions for initializing, terminating, and managing the KMSDRM platform
+GLFWbool _glfwConnectKMSDRM(int platformID, _GLFWplatform* platform);
+int _glfwInitKMSDRM(void);
+void _glfwTerminateKMSDRM(void);
+
+// Monitor functions
+void _glfwPollMonitorsKMSDRM(void);
+GLFWbool _glfwDetectMonitorsKMSDRM(void);
+void _glfwFreeMonitorKMSDRM(_GLFWmonitor* monitor);
+void _glfwGetMonitorPosKMSDRM(_GLFWmonitor* monitor, int* xpos, int* ypos);
+void _glfwGetMonitorContentScaleKMSDRM(_GLFWmonitor* monitor, float* xscale, float* yscale);
+void _glfwGetMonitorWorkareaKMSDRM(_GLFWmonitor* monitor, int* xpos, int* ypos, int* width, int* height);
+GLFWvidmode* _glfwGetVideoModesKMSDRM(_GLFWmonitor* monitor, int* found);
+GLFWbool _glfwGetVideoModeKMSDRM(_GLFWmonitor* monitor, GLFWvidmode* mode);
+GLFWbool _glfwGetGammaRampKMSDRM(_GLFWmonitor* monitor, GLFWgammaramp* ramp);
+void _glfwSetGammaRampKMSDRM(_GLFWmonitor* monitor, const GLFWgammaramp* ramp);
+
+// Window functions
+GLFWbool _glfwCreateWindowKMSDRM(_GLFWwindow* window, const _GLFWwndconfig* wndconfig, const _GLFWctxconfig* ctxconfig, const _GLFWfbconfig* fbconfig);
+void _glfwDestroyWindowKMSDRM(_GLFWwindow* window);
+void _glfwSetWindowTitleKMSDRM(_GLFWwindow* window, const char* title);
+void _glfwSetWindowIconKMSDRM(_GLFWwindow* window, int count, const GLFWimage* images);
+void _glfwSetWindowMonitorKMSDRM(_GLFWwindow* window, _GLFWmonitor* monitor, int xpos, int ypos, int width, int height, int refreshRate);
+void _glfwGetWindowPosKMSDRM(_GLFWwindow* window, int* xpos, int* ypos);
+void _glfwSetWindowPosKMSDRM(_GLFWwindow* window, int xpos, int ypos);
+void _glfwGetWindowSizeKMSDRM(_GLFWwindow* window, int* width, int* height);
+void _glfwSetWindowSizeKMSDRM(_GLFWwindow* window, int width, int height);
+void _glfwSetWindowSizeLimitsKMSDRM(_GLFWwindow* window, int minwidth, int minheight, int maxwidth, int maxheight);
+void _glfwSetWindowAspectRatioKMSDRM(_GLFWwindow* window, int n, int d);
+void _glfwGetFramebufferSizeKMSDRM(_GLFWwindow* window, int* width, int* height);
+void _glfwGetWindowFrameSizeKMSDRM(_GLFWwindow* window, int* left, int* top, int* right, int* bottom);
+void _glfwGetWindowContentScaleKMSDRM(_GLFWwindow* window, float* xscale, float* yscale);
+void _glfwIconifyWindowKMSDRM(_GLFWwindow* window);
+void _glfwRestoreWindowKMSDRM(_GLFWwindow* window);
+void _glfwMaximizeWindowKMSDRM(_GLFWwindow* window);
+GLFWbool _glfwWindowMaximizedKMSDRM(_GLFWwindow* window);
+GLFWbool _glfwWindowHoveredKMSDRM(_GLFWwindow* window);
+GLFWbool _glfwFramebufferTransparentKMSDRM(_GLFWwindow* window);
+void _glfwSetWindowResizableKMSDRM(_GLFWwindow* window, GLFWbool enabled);
+void _glfwSetWindowDecoratedKMSDRM(_GLFWwindow* window, GLFWbool enabled);
+void _glfwSetWindowFloatingKMSDRM(_GLFWwindow* window, GLFWbool enabled);
+void _glfwSetWindowMousePassthroughKMSDRM(_GLFWwindow* window, GLFWbool enabled);
+float _glfwGetWindowOpacityKMSDRM(_GLFWwindow* window);
+void _glfwSetWindowOpacityKMSDRM(_GLFWwindow* window, float opacity);
+void _glfwSetRawMouseMotionKMSDRM(_GLFWwindow* window, GLFWbool enabled);
+GLFWbool _glfwRawMouseMotionSupportedKMSDRM(void);
+void _glfwShowWindowKMSDRM(_GLFWwindow* window);
+void _glfwRequestWindowAttentionKMSDRM(_GLFWwindow* window);
+void _glfwHideWindowKMSDRM(_GLFWwindow* window);
+void _glfwFocusWindowKMSDRM(_GLFWwindow* window);
+GLFWbool _glfwWindowFocusedKMSDRM(_GLFWwindow* window);
+GLFWbool _glfwWindowIconifiedKMSDRM(_GLFWwindow* window);
+GLFWbool _glfwWindowVisibleKMSDRM(_GLFWwindow* window);
+void _glfwPollEventsKMSDRM(void);
+void _glfwWaitEventsKMSDRM(void);
+void _glfwWaitEventsTimeoutKMSDRM(double timeout);
+void _glfwPostEmptyEventKMSDRM(void);
+void _glfwGetCursorPosKMSDRM(_GLFWwindow* window, double* xpos, double* ypos);
+void _glfwSetCursorPosKMSDRM(_GLFWwindow* window, double x, double y);
+void _glfwSetCursorModeKMSDRM(_GLFWwindow* window, int mode);
+GLFWbool _glfwCreateCursorKMSDRM(_GLFWcursor* cursor, const GLFWimage* image, int xhot, int yhot);
+GLFWbool _glfwCreateStandardCursorKMSDRM(_GLFWcursor* cursor, int shape);
+void _glfwDestroyCursorKMSDRM(_GLFWcursor* cursor);
+void _glfwSetCursorKMSDRM(_GLFWwindow* window, _GLFWcursor* cursor);
+void _glfwSetClipboardStringKMSDRM(const char* string);
+const char* _glfwGetClipboardStringKMSDRM(void);
+const char* _glfwGetScancodeNameKMSDRM(int scancode);
+int _glfwGetKeyScancodeKMSDRM(int key);
+
+EGLenum _glfwGetEGLPlatformKMSDRM(EGLint** attribs);
+EGLNativeDisplayType _glfwGetEGLNativeDisplayKMSDRM(void);
+EGLNativeWindowType _glfwGetEGLNativeWindowKMSDRM(_GLFWwindow* window);
+
+void _glfwGetRequiredInstanceExtensionsKMSDRM(char** extensions);
+GLFWbool _glfwGetPhysicalDevicePresentationSupportKMSDRM(VkInstance instance, VkPhysicalDevice device, uint32_t queuefamily);
+VkResult _glfwCreateWindowSurfaceKMSDRM(VkInstance instance, _GLFWwindow* window, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface);
+
+void _glfwPollMonitorsKMSDRM(void);
+

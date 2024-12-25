@@ -69,6 +69,7 @@
 #define PLATFORM_NAME_COCOA "cooca"
 #define PLATFORM_NAME_WL    "wayland"
 #define PLATFORM_NAME_X11   "x11"
+#define PLATFORM_NAME_KMSDRM "kmsdrm"
 #define PLATFORM_NAME_NULL  "null"
 
 static void usage(void)
@@ -81,6 +82,7 @@ static void usage(void)
                                         PLATFORM_NAME_COCOA " or "
                                         PLATFORM_NAME_X11 " or "
                                         PLATFORM_NAME_WL " or "
+                                        PLATFORM_NAME_KMSDRM " or "
                                         PLATFORM_NAME_NULL ")\n");
     printf("  -a, --client-api=API      the client API to use ("
                                         API_NAME_OPENGL " or "
@@ -150,6 +152,8 @@ static const char* get_platform_name(int platform)
         return "Wayland";
     else if (platform == GLFW_PLATFORM_X11)
         return "X11";
+    else if (platform == GLFW_PLATFORM_KMSDRM)
+        return "KMSDRM";
     else if (platform == GLFW_PLATFORM_NULL)
         return "Null";
 
@@ -335,6 +339,7 @@ static void print_platform(void)
         GLFW_PLATFORM_COCOA,
         GLFW_PLATFORM_WAYLAND,
         GLFW_PLATFORM_X11,
+        GLFW_PLATFORM_KMSDRM,
         GLFW_PLATFORM_NULL
     };
 
@@ -444,6 +449,8 @@ int main(int argc, char** argv)
                     platform = GLFW_PLATFORM_WAYLAND;
                 else if (strcasecmp(optarg, PLATFORM_NAME_X11) == 0)
                     platform = GLFW_PLATFORM_X11;
+                else if (strcasecmp(optarg, PLATFORM_NAME_KMSDRM) == 0)
+                    platform = GLFW_PLATFORM_KMSDRM;
                 else if (strcasecmp(optarg, PLATFORM_NAME_NULL) == 0)
                     platform = GLFW_PLATFORM_NULL;
                 else
