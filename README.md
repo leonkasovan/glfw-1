@@ -10,7 +10,8 @@ application development.  It provides a simple, platform-independent API for
 creating windows, contexts and surfaces, reading input, handling events, etc.
 
 GLFW natively supports Windows, macOS and Linux and other Unix-like systems.  On
-Linux both Wayland and X11 are supported.
+Linux both Wayland and X11 are supported. Now KMSDRM is on progress (by leonkasovan)
+and the example (triangle-opengles) successfully tested in Raspberry Pi 4.
 
 GLFW is licensed under the [zlib/libpng
 license](https://www.glfw.org/license.html).
