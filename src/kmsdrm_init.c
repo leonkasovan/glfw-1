@@ -684,11 +684,19 @@ GLFWbool _glfwInitKMSDRM(void) {
     } else {
         printf("init_drm ok\n");
     }
+
+    TODO:
+    //createKeyTables();
+    //if (!_glfwInitJoysticksLinux())
+    //    return GLFW_FALSE;
+    //_glfwInitTimerPOSIX();
     return !ret;
 }
 
 // Terminate the KMSDRM platform
 void _glfwTerminateKMSDRM(void) {
+    //_glfwTerminateEGL();
+    //_glfwTerminateJoysticksLinux();
     // printf("kmsdrm_init.c:%d _glfwTerminateKMSDRM BEGIN\n", __LINE__);
     if (_glfw.kmsdrm.drm.fd >= 0)
         close(_glfw.kmsdrm.drm.fd);
