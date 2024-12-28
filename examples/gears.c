@@ -23,7 +23,7 @@
 
 #if defined(_MSC_VER)
  // Make MS math.h define M_PI
- #define _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
 #endif
 
 #include <math.h>
@@ -50,8 +50,7 @@
 
 static void
 gear(GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
-  GLint teeth, GLfloat tooth_depth)
-{
+  GLint teeth, GLfloat tooth_depth) {
   GLint i;
   GLfloat r0, r1, r2;
   GLfloat angle, da;
@@ -172,53 +171,51 @@ static GLint gear1, gear2, gear3;
 static GLfloat angle = 0.f;
 
 /* OpenGL draw function & timing */
-static void draw(void)
-{
+static void draw(void) {
   glClearColor(0.0, 0.0, 0.0, 0.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glPushMatrix();
-    glRotatef(view_rotx, 1.0, 0.0, 0.0);
-    glRotatef(view_roty, 0.0, 1.0, 0.0);
-    glRotatef(view_rotz, 0.0, 0.0, 1.0);
+  glRotatef(view_rotx, 1.0, 0.0, 0.0);
+  glRotatef(view_roty, 0.0, 1.0, 0.0);
+  glRotatef(view_rotz, 0.0, 0.0, 1.0);
 
-    glPushMatrix();
-      glTranslatef(-3.0, -2.0, 0.0);
-      glRotatef(angle, 0.0, 0.0, 1.0);
-      glCallList(gear1);
-    glPopMatrix();
+  glPushMatrix();
+  glTranslatef(-3.0, -2.0, 0.0);
+  glRotatef(angle, 0.0, 0.0, 1.0);
+  glCallList(gear1);
+  glPopMatrix();
 
-    glPushMatrix();
-      glTranslatef(3.1f, -2.f, 0.f);
-      glRotatef(-2.f * angle - 9.f, 0.f, 0.f, 1.f);
-      glCallList(gear2);
-    glPopMatrix();
+  glPushMatrix();
+  glTranslatef(3.1f, -2.f, 0.f);
+  glRotatef(-2.f * angle - 9.f, 0.f, 0.f, 1.f);
+  glCallList(gear2);
+  glPopMatrix();
 
-    glPushMatrix();
-      glTranslatef(-3.1f, 4.2f, 0.f);
-      glRotatef(-2.f * angle - 25.f, 0.f, 0.f, 1.f);
-      glCallList(gear3);
-    glPopMatrix();
+  glPushMatrix();
+  glTranslatef(-3.1f, 4.2f, 0.f);
+  glRotatef(-2.f * angle - 25.f, 0.f, 0.f, 1.f);
+  glCallList(gear3);
+  glPopMatrix();
 
   glPopMatrix();
 }
 
 
 /* update animation parameters */
-static void animate(void)
-{
+static void animate(void) {
   angle = 100.f * (float) glfwGetTime();
 }
 
 
 /* change view angle, exit upon ESC */
-void key( GLFWwindow* window, int k, int s, int action, int mods )
-{
-  if( action != GLFW_PRESS ) return;
+void key(GLFWwindow* window, int k, int s, int action, int mods) {
+  printf("key=%d scancode=%d action=%d mods=%d\n", k, s, action, mods);
+  if (action != GLFW_PRESS) return;
 
   switch (k) {
   case GLFW_KEY_Z:
-    if( mods & GLFW_MOD_SHIFT )
+    if (mods & GLFW_MOD_SHIFT)
       view_rotz -= 5.0;
     else
       view_rotz += 5.0;
@@ -245,32 +242,30 @@ void key( GLFWwindow* window, int k, int s, int action, int mods )
 
 
 /* new window size */
-void reshape( GLFWwindow* window, int width, int height )
-{
+void reshape(GLFWwindow* window, int width, int height) {
   GLfloat h = (GLfloat) height / (GLfloat) width;
   GLfloat xmax, znear, zfar;
 
   znear = 5.0f;
-  zfar  = 30.0f;
-  xmax  = znear * 0.5f;
+  zfar = 30.0f;
+  xmax = znear * 0.5f;
 
-  glViewport( 0, 0, (GLint) width, (GLint) height );
-  glMatrixMode( GL_PROJECTION );
+  glViewport(0, 0, (GLint) width, (GLint) height);
+  glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glFrustum( -xmax, xmax, -xmax*h, xmax*h, znear, zfar );
-  glMatrixMode( GL_MODELVIEW );
+  glFrustum(-xmax, xmax, -xmax * h, xmax * h, znear, zfar);
+  glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-  glTranslatef( 0.0, 0.0, -20.0 );
+  glTranslatef(0.0, 0.0, -20.0);
 }
 
 
 /* program & OpenGL initialization */
-static void init(void)
-{
-  static GLfloat pos[4] = {5.f, 5.f, 10.f, 0.f};
-  static GLfloat red[4] = {0.8f, 0.1f, 0.f, 1.f};
-  static GLfloat green[4] = {0.f, 0.8f, 0.2f, 1.f};
-  static GLfloat blue[4] = {0.2f, 0.2f, 1.f, 1.f};
+static void init(void) {
+  static GLfloat pos[4] = { 5.f, 5.f, 10.f, 0.f };
+  static GLfloat red[4] = { 0.8f, 0.1f, 0.f, 1.f };
+  static GLfloat green[4] = { 0.f, 0.8f, 0.2f, 1.f };
+  static GLfloat blue[4] = { 0.2f, 0.2f, 1.f, 1.f };
 
   glLightfv(GL_LIGHT0, GL_POSITION, pos);
   glEnable(GL_CULL_FACE);
@@ -302,60 +297,56 @@ static void init(void)
 
 
 /* program entry */
-int main(int argc, char *argv[])
-{
-    GLFWwindow* window;
-    int width, height;
+int main(int argc, char* argv[]) {
+  GLFWwindow* window;
+  int width, height;
 
-    if( !glfwInit() )
-    {
-        fprintf( stderr, "Failed to initialize GLFW\n" );
-        exit( EXIT_FAILURE );
-    }
+  if (!glfwInit()) {
+    fprintf(stderr, "Failed to initialize GLFW\n");
+    exit(EXIT_FAILURE);
+  }
 
-    glfwWindowHint(GLFW_DEPTH_BITS, 16);
-    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+  glfwWindowHint(GLFW_DEPTH_BITS, 16);
+  glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
 
-    window = glfwCreateWindow( 300, 300, "Gears", NULL, NULL );
-    if (!window)
-    {
-        fprintf( stderr, "Failed to open GLFW window\n" );
-        glfwTerminate();
-        exit( EXIT_FAILURE );
-    }
-
-    // Set callback functions
-    glfwSetFramebufferSizeCallback(window, reshape);
-    glfwSetKeyCallback(window, key);
-
-    glfwMakeContextCurrent(window);
-    gladLoadGL(glfwGetProcAddress);
-    glfwSwapInterval( 1 );
-
-    glfwGetFramebufferSize(window, &width, &height);
-    reshape(window, width, height);
-
-    // Parse command-line options
-    init();
-
-    // Main loop
-    while( !glfwWindowShouldClose(window) )
-    {
-        // Draw gears
-        draw();
-
-        // Update animation
-        animate();
-
-        // Swap buffers
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-
-    // Terminate GLFW
+  window = glfwCreateWindow(0, 0, "Gears", NULL, NULL);
+  if (!window) {
+    fprintf(stderr, "Failed to open GLFW window\n");
     glfwTerminate();
+    exit(EXIT_FAILURE);
+  }
 
-    // Exit program
-    exit( EXIT_SUCCESS );
+  // Set callback functions
+  glfwSetFramebufferSizeCallback(window, reshape);
+  glfwSetKeyCallback(window, key);
+
+  glfwMakeContextCurrent(window);
+  gladLoadGL(glfwGetProcAddress);
+  glfwSwapInterval(1);
+
+  glfwGetFramebufferSize(window, &width, &height);
+  reshape(window, width, height);
+
+  // Parse command-line options
+  init();
+
+  // Main loop
+  while (!glfwWindowShouldClose(window)) {
+    // Draw gears
+    draw();
+
+    // Update animation
+    animate();
+
+    // Swap buffers
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+  }
+
+  // Terminate GLFW
+  glfwTerminate();
+
+  // Exit program
+  exit(EXIT_SUCCESS);
 }
 

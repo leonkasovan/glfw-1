@@ -100,7 +100,7 @@ GLuint compileShader(GLenum type, const char* source) {
         printf("Error compiling shader: %s\n", log);
         exit(EXIT_FAILURE);
     } else {
-        printf("compiling shader ok: %d\n", shader);
+        // printf("compiling shader ok: %d\n", shader);
     }
 
     return shader;
@@ -140,7 +140,7 @@ int main(void) {
         // }
         return GLFW_FALSE;
     } else {
-        printf("glfwCreateWindow1 succed\n");
+        // printf("glfwCreateWindow1 succed\n");
     }
     // printf("examples/triangle-opengles.c: %d\n", __LINE__);
 
@@ -150,7 +150,7 @@ int main(void) {
     glfwMakeContextCurrent(window);
     // printf("examples/triangle-opengles.c: %d\n", __LINE__);
     int version = gladLoadGLES2(glfwGetProcAddress);
-    printf("examples/triangle-opengles.c: version=%d\n", version);
+    // printf("examples/triangle-opengles.c: version=%d\n", version);
     glfwSwapInterval(1);
     // printf("examples/triangle-opengles.c: %d\n", __LINE__);
 

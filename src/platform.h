@@ -93,6 +93,7 @@
 #if defined(_GLFW_KMSDRM)
 #include "kmsdrm_platform.h"
 #define GLFW_EXPOSE_NATIVE_KMSDRM
+#define GLFW_EXPOSE_NATIVE_EGL
 #else
 #define GLFW_KMSDRM_WINDOW_STATE
 #define GLFW_KMSDRM_MONITOR_STATE
@@ -220,7 +221,7 @@
 #define GLFW_BUILD_POSIX_MODULE
 #endif
 
-#if defined(_GLFW_WAYLAND) || defined(_GLFW_X11)
+#if defined(_GLFW_WAYLAND) || defined(_GLFW_X11) || defined(_GLFW_KMSDRM)
 #define GLFW_BUILD_POSIX_POLL
 #endif
 

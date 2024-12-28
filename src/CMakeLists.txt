@@ -60,8 +60,8 @@ endif()
 if (GLFW_BUILD_KMSDRM)
     link_libraries(gbm)
     target_compile_definitions(glfw PRIVATE _GLFW_KMSDRM)
-    target_sources(glfw PRIVATE wl_platform.h xkb_unicode.h kmsdrm_init.c
-                                kmsdrm_monitor.c kmsdrm_window.c xkb_unicode.c)
+    target_sources(glfw PRIVATE kmsdrm_init.c kmsdrm_platform.h
+                                kmsdrm_monitor.c kmsdrm_window.c)
 endif()
 
 if (GLFW_BUILD_X11 OR GLFW_BUILD_WAYLAND OR GLFW_BUILD_KMSDRM)

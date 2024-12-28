@@ -61,41 +61,30 @@ _glfwCreateWindowKMSDRM
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-// #include <assert.h>
-// #include <unistd.h>
 #include <string.h>
-// #include <fcntl.h>
-// #include <sys/mman.h>
-// #include <sys/timerfd.h>
-// #include <poll.h>
-// #include <linux/input-event-codes.h>
-// #include <EGL/egl.h>
-// #include <EGL/eglext.h>
 
 int init_surface(struct gbm* gbm, uint64_t modifier) {
-    // if (gbm_surface_create_with_modifiers) {
-    puts("gbm_surface_create_with_modifiers");
+    debug_printf("init_surface: gbm_surface_create_with_modifiers gbm.device:%p gbm.width=%d gbm.height=%d, gbm.format=%d modifier=%ld\n", gbm->dev, gbm->width, gbm->height, gbm->format, modifier);
     gbm->surface = gbm_surface_create_with_modifiers(gbm->dev, gbm->width, gbm->height, gbm->format, &modifier, 1);
-    // }
 
     if (!gbm->surface) {
         if (modifier != DRM_FORMAT_MOD_LINEAR) {
-            printf("Modifiers requested but support isn't available\n");
+            _glfwInputError(GLFW_PLATFORM_ERROR, "init_surface: Modifiers requested but support isn't available\n");
             return -2;
         }
-        puts("gbm_surface_create");
+        debug_printf("init_surface: gbm_surface_create gbm.device:%p gbm.width=%d gbm.height=%d, gbm.format=%d modifier=%d", gbm->dev, gbm->width, gbm->height, gbm->format, GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
         gbm->surface = gbm_surface_create(gbm->dev, gbm->width, gbm->height, gbm->format, GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
     }
     if (!gbm->surface) {
-        printf("failed to create gbm surface\n");
+        _glfwInputError(GLFW_PLATFORM_ERROR, "init_surface: Failed to create gbm surface\n");
         return -3;
     }
+    printf("init_surface: %dx%d created\n", gbm->width, gbm->height);
     return 0;
 }
 
-int init_gbm(struct gbm* gbm, int drm_fd, int w, int h, uint32_t format,
-    uint64_t modifier) {
-    puts("gbm_create_device");
+int init_gbm(struct gbm* gbm, int drm_fd, int w, int h, uint32_t format, uint64_t modifier) {
+    debug_printf("init_gbm: gbm_create_device drm_fd=%d\n", drm_fd);
     gbm->dev = gbm_create_device(drm_fd);
     if (!gbm->dev)
         return -1;
@@ -103,10 +92,31 @@ int init_gbm(struct gbm* gbm, int drm_fd, int w, int h, uint32_t format,
     gbm->format = format;
     gbm->surface = NULL;
 
-    gbm->width = w;
-    gbm->height = h;
+    debug_printf("init_gbm: request width=%d height=%d\n", w, h);
+    if (w && h) {
+        gbm->width = w;
+        gbm->height = h;
+    } else {
+        gbm->width = _glfw.kmsdrm.drm.mode->hdisplay;
+        gbm->height = _glfw.kmsdrm.drm.mode->vdisplay;
+    }
 
     return init_surface(gbm, modifier);
+}
+
+static void inputText(_GLFWwindow* window, uint32_t scancode) {
+    // const xkb_keysym_t* keysyms;
+    // const xkb_keycode_t keycode = scancode + 8;
+
+    // if (xkb_state_key_get_syms(_glfw.wl.xkb.state, keycode, &keysyms) == 1) {
+    //     const xkb_keysym_t keysym = composeSymbol(keysyms[0]);
+    //     const uint32_t codepoint = xkb_keysym_to_utf32(keysym);
+    //     if (codepoint != 0) {
+    //         const int mods = _glfw.wl.xkb.modifiers;
+    //         const int plain = !(mods & (GLFW_MOD_CONTROL | GLFW_MOD_ALT));
+    //         _glfwInputChar(window, codepoint, mods, plain);
+    //     }
+    // }
 }
 
 static void handleEvents(double* timeout) {
@@ -114,6 +124,53 @@ static void handleEvents(double* timeout) {
     if (_glfw.joysticksInitialized)
         _glfwDetectJoystickConnectionLinux();
 #endif
+
+    GLFWbool event = GLFW_FALSE;
+    enum { DISPLAY_FD, KEYBOARD_FD, CURSOR_FD };
+    struct pollfd fds[] =
+    {
+        [DISPLAY_FD] = { -1, POLLIN },
+        [KEYBOARD_FD] = { _glfw.kmsdrm.keyboard_fd, POLLIN },
+        [CURSOR_FD] = { -1, POLLIN }
+    };
+
+    while (!event) {
+        if (!_glfwPollPOSIX(fds, sizeof(fds) / sizeof(fds[0]), timeout)) {
+            return;
+        }
+
+        if (fds[DISPLAY_FD].revents & POLLIN) {
+            // wl_display_read_events(_glfw.wl.display);
+            // if (wl_display_dispatch_pending(_glfw.wl.display) > 0)
+            event = GLFW_TRUE;
+        } // else
+            // (NULL); // wl_display_cancel_read(_glfw.wl.display);
+
+        if (fds[KEYBOARD_FD].revents & POLLIN) {
+            struct input_event ev[64];
+
+            int rd = read(fds[DISPLAY_FD].fd, ev, sizeof(ev));
+            if (rd >= (int) sizeof(struct input_event)) {
+                for (int i = 0; i < rd / sizeof(struct input_event); i++) {
+                    if (ev[i].type == EV_KEY) {
+                        int scancode = ev[i].code;
+                        unsigned int translate_key = scancode + 1000;
+                        int action = ev[i].value;
+                        int mods = 0;
+
+                        // _glfwInputKey(_glfw.wl.keyboardFocus, translateKey(_glfw.wl.keyRepeatScancode), _glfw.wl.keyRepeatScancode, GLFW_PRESS, _glfw.wl.xkb.modifiers);
+                        _glfwInputKey(_glfw.kmsdrm.window, translate_key, scancode, action, mods);
+                        inputText(_glfw.kmsdrm.window, scancode);
+                    }
+
+                }
+            }
+        }
+        if (fds[CURSOR_FD].revents & POLLIN) {
+            // handle cursor event
+            event = GLFW_TRUE;
+        }
+    }
 }
 
 EGLenum _glfwGetEGLPlatformKMSDRM(EGLint** attribs) {
@@ -128,30 +185,27 @@ EGLNativeDisplayType _glfwGetEGLNativeDisplayKMSDRM(void) {
 }
 
 EGLNativeWindowType _glfwGetEGLNativeWindowKMSDRM(_GLFWwindow* window) {
-    // printf("kmsdrm_window.c:%d _glfwGetEGLNativeWindowKMSDRM => %p\n", __LINE__, (void*) _glfw.kmsdrm.gbm.surface);
+    // debug_printf("kmsdrm_window.c:%d _glfwGetEGLNativeWindowKMSDRM => %p\n", __LINE__, (void*) _glfw.kmsdrm.gbm.surface);
     // return _glfw.kmsdrm.egl.surface;
     return _glfw.kmsdrm.gbm.surface;
     // return window->context.egl.surface;
 }
 
 GLFWbool _glfwCreateWindowKMSDRM(_GLFWwindow* window, const _GLFWwndconfig* wndconfig, const _GLFWctxconfig* ctxconfig, const _GLFWfbconfig* fbconfig) {
-    // printf("kmsdrm_window.c:%d _glfwCreateWindowKMSDRM BEGIN\n", __LINE__);
+    // debug_printf("kmsdrm_window.c:%d _glfwCreateWindowKMSDRM BEGIN\n", __LINE__);
     if (init_gbm(&_glfw.kmsdrm.gbm, _glfw.kmsdrm.drm.fd, wndconfig->width, wndconfig->height, _glfw.kmsdrm.format, _glfw.kmsdrm.modifier)) {
-        printf("Failed to initialize GBM.\n");
+        debug_printf("Failed to initialize GBM.\n");
         return GLFW_FALSE;
     } else {
-        printf("Initializing GBM [OK]\n");
+        debug_printf("Initializing GBM [OK]\n");
     }
 
     // Initialize EGL TODO: samakan _glfwInitEGL dengan init_egl
-    // printf("kmsdrm_window.c:%d \n", __LINE__);
     if (ctxconfig->client != GLFW_NO_API) {
         if (ctxconfig->source == GLFW_EGL_CONTEXT_API || ctxconfig->source == GLFW_NATIVE_CONTEXT_API) {
             if (!_glfwInitEGL()) {
-                printf("kmsdrm_window.c:%d _glfwInitEGL failed\n", __LINE__);
+                _glfwInputError(GLFW_PLATFORM_ERROR, "_glfwCreateWindowKMSDRM: _glfwInitEGL failed\n");
                 return GLFW_FALSE;
-            } else {
-                printf("kmsdrm_window.c:%d _glfwInitEGL succeed\n", __LINE__);
             }
         }
     }
@@ -160,53 +214,52 @@ GLFWbool _glfwCreateWindowKMSDRM(_GLFWwindow* window, const _GLFWwndconfig* wndc
     if (ctxconfig->client != GLFW_NO_API) {
         if (ctxconfig->source == GLFW_EGL_CONTEXT_API || ctxconfig->source == GLFW_NATIVE_CONTEXT_API) {
             if (!_glfwCreateContextEGL(window, ctxconfig, fbconfig)) {
-                printf("kmsdrm_window.c:%d _glfwCreateContextEGL failed\n", __LINE__);
+                _glfwInputError(GLFW_PLATFORM_ERROR, "_glfwCreateWindowKMSDRM: _glfwCreateContextEGL failed\n");
                 return GLFW_FALSE;
-            } else {
-                printf("kmsdrm_window.c:%d _glfwCreateContextEGL succeed\n", __LINE__);
             }
         }
 
         if (!_glfwRefreshContextAttribs(window, ctxconfig)) {
-            printf("kmsdrm_window.c:%d _glfwRefreshContextAttribs failed\n", __LINE__);
+            debug_printf("kmsdrm_window.c:%d _glfwRefreshContextAttribs failed\n", __LINE__);
             return GLFW_FALSE;
         } else {
-            printf("kmsdrm_window.c:%d _glfwRefreshContextAttribs succeed\n", __LINE__);
+            // debug_printf("kmsdrm_window.c:%d _glfwRefreshContextAttribs succeed\n", __LINE__);
         }
     }
-    // printf("kmsdrm_window.c:%d _glfwCreateWindowKMSDRM END\n", __LINE__);
 
     // initial eglSwap here
-    puts("_glfwCreateWindowKMSDRM: eglMakeCurrent");
+    debug_printf("_glfwCreateWindowKMSDRM: eglMakeCurrent egl.display=%p egl.surface=%p egl.context=%p\n", _glfw.egl.display, window->context.egl.surface, window->context.egl.handle);
     if (!eglMakeCurrent(_glfw.egl.display, window->context.egl.surface, window->context.egl.surface, window->context.egl.handle)) {
-        printf("EGL: Failed to make context current\n");
+        debug_printf("EGL: Failed to make context current\n");
         return GLFW_FALSE;
     }
     if (_glfw.kmsdrm.gbm.surface) {
-        puts("_glfwCreateWindowKMSDRM: eglSwapBuffers");
+        debug_printf("_glfwCreateWindowKMSDRM: eglSwapBuffers egl.display=%p egl.surface=%p\n", _glfw.egl.display, window->context.egl.surface);
         if (!eglSwapBuffers(_glfw.egl.display, window->context.egl.surface)) {
-            printf("eglSwapBuffers error.\n");
+            debug_printf("_glfwCreateWindowKMSDRM: eglSwapBuffers error\n");
             return GLFW_FALSE;
         }
         puts("_glfwCreateWindowKMSDRM: gbm_surface_lock_front_buffer");
         _glfw.kmsdrm.gbm.bo = gbm_surface_lock_front_buffer(_glfw.kmsdrm.gbm.surface);
         if (!_glfw.kmsdrm.gbm.bo) {
-            printf("gbm_surface_lock_front_buffer error.\n");
+            debug_printf("gbm_surface_lock_front_buffer error.\n");
             return GLFW_FALSE;
         }
     }
     puts("_glfwCreateWindowKMSDRM: drm_fb_get_from_bo");
     _glfw.kmsdrm.gbm.fb = drm_fb_get_from_bo(_glfw.kmsdrm.gbm.bo);
     if (!_glfw.kmsdrm.gbm.fb) {
-        printf("Failed to get a new framebuffer BO\n");
+        debug_printf("Failed to get a new framebuffer BO\n");
         return GLFW_FALSE;
     }
-    printf("_glfwCreateWindowKMSDRM: drmModeSetCrtc drm.fd=%d drm.crtc_id=%d fb_id=%d drm.connector_id=%d drm.mode=%p\n", _glfw.kmsdrm.drm.fd, _glfw.kmsdrm.drm.crtc_id, _glfw.kmsdrm.gbm.fb->fb_id, _glfw.kmsdrm.drm.connector_id, _glfw.kmsdrm.drm.mode);
+    debug_printf("_glfwCreateWindowKMSDRM: drmModeSetCrtc drm.fd=%d drm.crtc_id=%d fb_id=%d drm.connector_id=%d drm.mode=%p\n", _glfw.kmsdrm.drm.fd, _glfw.kmsdrm.drm.crtc_id, _glfw.kmsdrm.gbm.fb->fb_id, _glfw.kmsdrm.drm.connector_id, _glfw.kmsdrm.drm.mode);
     if (drmModeSetCrtc(_glfw.kmsdrm.drm.fd, _glfw.kmsdrm.drm.crtc_id, _glfw.kmsdrm.gbm.fb->fb_id, 0, 0, &(_glfw.kmsdrm.drm.connector_id), 1, _glfw.kmsdrm.drm.mode)) {
-        printf("drmModeSetCrtc error: %s (%d)\n", strerror(errno), errno);
+        debug_printf("drmModeSetCrtc error: %s (%d)\n", strerror(errno), errno);
         return GLFW_FALSE;
     }
 
+
+    _glfw.kmsdrm.window = window;
     return GLFW_TRUE;
 }
 
@@ -216,7 +269,7 @@ void _glfwDestroyWindowKMSDRM(_GLFWwindow* window) {
 }
 
 void _glfwGetFramebufferSizeKMSDRM(_GLFWwindow* window, int* width, int* height) {
-    puts("_glfwGetFramebufferSizeKMSDRM");
+    // puts("_glfwGetFramebufferSizeKMSDRM");
     if (width)
         *width = _glfw.kmsdrm.gbm.width; // *width = 640; //window->wl.fbWidth;
     if (height)

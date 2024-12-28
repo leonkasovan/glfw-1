@@ -5,8 +5,24 @@
 #include <xf86drmMode.h>
 #include <gbm.h>
 #include <libdrm/drm_fourcc.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <inttypes.h>
+#include "posix_poll.h"
 
 #define WEAK __attribute__((weak))
+#ifdef DEBUG
+#define debug_puts puts
+#define debug_printf printf
+#else
+#define debug_puts(x) ((void)0)
+#define debug_printf(...) ((void)0)
+#endif
 
 // #define GLFW_KMSDRM_WINDOW_STATE          _GLFWwindowKMSDRM kmsdrm;
 // #define GLFW_KMSDRM_LIBRARY_WINDOW_STATE  _GLFWlibraryKMSDRM kmsdrm;
@@ -82,7 +98,7 @@ struct egl {
     bool modifiers_supported;
 };
 
-int init_egl(struct egl* egl, const struct gbm* gbm, int samples);
+// int init_egl(struct egl* egl, const struct gbm* gbm, int samples);
 int create_program(const char* vs_src, const char* fs_src);
 int link_program(unsigned program);
 struct drm_fb* drm_fb_get_from_bo(struct gbm_bo* bo);
@@ -114,6 +130,12 @@ typedef struct _GLFWlibraryKMSDRM {
     unsigned int count;
     bool surfaceless;
     bool nonblocking;
+    int keyboard_fd;
+    _GLFWwindow* window;
+#ifdef DEBUG
+    int64_t start_time;
+    int64_t report_time;
+#endif
 } _GLFWlibraryKMSDRM;
 
 // Functions for initializing, terminating, and managing the KMSDRM platform

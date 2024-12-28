@@ -306,7 +306,7 @@ const _GLFWfbconfig* _glfwChooseFBConfig(const _GLFWfbconfig* desired,
 //
 GLFWbool _glfwRefreshContextAttribs(_GLFWwindow* window,
     const _GLFWctxconfig* ctxconfig) {
-    // printf("context.c:%d _glfwRefreshContextAttribs BEGIN\n", __LINE__);
+    // debug_printf("context.c:%d _glfwRefreshContextAttribs BEGIN\n", __LINE__);
     int i;
     _GLFWwindow* previous;
     const char* version;
@@ -321,13 +321,11 @@ GLFWbool _glfwRefreshContextAttribs(_GLFWwindow* window,
     window->context.source = ctxconfig->source;
     window->context.client = GLFW_OPENGL_API;
 
-    printf("context.c:%d _glfwRefreshContextAttribs\n", __LINE__);
     previous = _glfwPlatformGetTls(&_glfw.contextSlot);
     glfwMakeContextCurrent((GLFWwindow*) window);
     if (_glfwPlatformGetTls(&_glfw.contextSlot) != window)
         return GLFW_FALSE;
 
-    printf("context.c:%d _glfwRefreshContextAttribs\n", __LINE__);
     window->context.GetIntegerv = (PFNGLGETINTEGERVPROC)
         window->context.getProcAddress("glGetIntegerv");
     window->context.GetString = (PFNGLGETSTRINGPROC)
@@ -338,7 +336,6 @@ GLFWbool _glfwRefreshContextAttribs(_GLFWwindow* window,
         return GLFW_FALSE;
     }
 
-    printf("context.c:%d _glfwRefreshContextAttribs\n", __LINE__);
     version = (const char*) window->context.GetString(GL_VERSION);
     if (!version) {
         if (ctxconfig->client == GLFW_OPENGL_API) {
@@ -353,7 +350,6 @@ GLFWbool _glfwRefreshContextAttribs(_GLFWwindow* window,
         return GLFW_FALSE;
     }
 
-    printf("context.c:%d _glfwRefreshContextAttribs\n", __LINE__);
     for (i = 0; prefixes[i]; i++) {
         const size_t length = strlen(prefixes[i]);
 
@@ -364,7 +360,6 @@ GLFWbool _glfwRefreshContextAttribs(_GLFWwindow* window,
         }
     }
 
-    printf("context.c:%d _glfwRefreshContextAttribs\n", __LINE__);
     if (!sscanf(version, "%d.%d.%d",
         &window->context.major,
         &window->context.minor,
@@ -381,7 +376,6 @@ GLFWbool _glfwRefreshContextAttribs(_GLFWwindow* window,
         return GLFW_FALSE;
     }
 
-    printf("context.c:%d _glfwRefreshContextAttribs\n", __LINE__);
     if (window->context.major < ctxconfig->major ||
         (window->context.major == ctxconfig->major &&
             window->context.minor < ctxconfig->minor)) {
@@ -408,7 +402,6 @@ GLFWbool _glfwRefreshContextAttribs(_GLFWwindow* window,
         return GLFW_FALSE;
     }
 
-    printf("context.c:%d _glfwRefreshContextAttribs\n", __LINE__);
     if (window->context.major >= 3) {
         // OpenGL 3.0+ uses a different function for extension string retrieval
         // We cache it here instead of in glfwExtensionSupported mostly to alert
@@ -424,7 +417,6 @@ GLFWbool _glfwRefreshContextAttribs(_GLFWwindow* window,
         }
     }
 
-    printf("context.c:%d _glfwRefreshContextAttribs\n", __LINE__);
     if (window->context.client == GLFW_OPENGL_API) {
         // Read back context flags (OpenGL 3.0 and above)
         if (window->context.major >= 3) {
@@ -498,7 +490,6 @@ GLFWbool _glfwRefreshContextAttribs(_GLFWwindow* window,
         }
     }
 
-    printf("context.c:%d _glfwRefreshContextAttribs\n", __LINE__);
     if (glfwExtensionSupported("GL_KHR_context_flush_control")) {
         GLint behavior;
         window->context.GetIntegerv(GL_CONTEXT_RELEASE_BEHAVIOR, &behavior);
@@ -511,21 +502,19 @@ GLFWbool _glfwRefreshContextAttribs(_GLFWwindow* window,
 
     // Clearing the front buffer to black to avoid garbage pixels left over from
     // previous uses of our bit of VRAM
-    printf("context.c:%d _glfwRefreshContextAttribs\n", __LINE__);
     {
         PFNGLCLEARPROC glClear = (PFNGLCLEARPROC)
             window->context.getProcAddress("glClear");
         glClear(GL_COLOR_BUFFER_BIT);
 
-#ifndef _GLFW_KMSDRM
+#ifndef _GLFW_KMSDRM        
         if (window->doublebuffer)
             window->context.swapBuffers(window);
-#endif        
+#endif
     }
 
 
     glfwMakeContextCurrent((GLFWwindow*) previous);
-    printf("context.c:%d _glfwRefreshContextAttribs END\n", __LINE__);
     return GLFW_TRUE;
 }
 

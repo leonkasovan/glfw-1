@@ -1,6 +1,14 @@
 {
     "files.associations": {
         "fcntl.h": "c",
-        "internal.h": "c"
+        "internal.h": "c",
+        "signal.h": "c",
+        "array": "c",
+        "deque": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "vector": "c",
+        "iterator": "c",
+        "string_view": "c"
     }
 }

@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**"
             ],
             "defines": [
-                "_GLFW_KMSDRM"
+                "_GLFW_KMSDRM",
+                "GLFW_BUILD_POSIX_POLL"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c17",
