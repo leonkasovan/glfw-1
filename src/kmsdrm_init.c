@@ -556,8 +556,11 @@ GLFWbool _glfwInitKMSDRM(void) {
     GLFWbool ret = init_drm(&(_glfw.kmsdrm.drm), _glfw.kmsdrm.device, _glfw.kmsdrm.mode_str, _glfw.kmsdrm.connector_id, _glfw.kmsdrm.vrefresh, _glfw.kmsdrm.count, _glfw.kmsdrm.nonblocking);
     if (ret) {
         debug_printf("_glfwInitKMSDRM: Initializing DRM [FAIL:%d]\n", ret);
-    } else {
+    } else {    // Register the DRM device as a monitor
         debug_printf("_glfwInitKMSDRM: Initializing DRM fullscreen %dx%d [OK]\n", _glfw.kmsdrm.drm.mode->hdisplay, _glfw.kmsdrm.drm.mode->vdisplay);
+        _glfw.current_monitor.widthMM = _glfw.kmsdrm.drm.mode->hdisplay;
+        _glfw.current_monitor.heightMM = _glfw.kmsdrm.drm.mode->vdisplay;
+        _glfwInputMonitor(&_glfw.current_monitor, GLFW_CONNECTED, _GLFW_INSERT_LAST);
     }
 
     return !ret;
@@ -609,9 +612,9 @@ GLFWbool _glfwConnectKMSDRM(int platformID, _GLFWplatform* platform) {
         .updateGamepadGUID = _glfwUpdateGamepadGUIDNull,
 #endif
         // .freeMonitor = _glfwFreeMonitorKMSDRM,
-        // .getMonitorPos = _glfwGetMonitorPosKMSDRM,
-        // .getMonitorContentScale = _glfwGetMonitorContentScaleKMSDRM,
-        // .getMonitorWorkarea = _glfwGetMonitorWorkareaKMSDRM,
+        .getMonitorPos = _glfwGetMonitorPosKMSDRM,
+        .getMonitorContentScale = _glfwGetMonitorContentScaleKMSDRM,
+        .getMonitorWorkarea = _glfwGetMonitorWorkareaKMSDRM,
         // .getVideoModes = _glfwGetVideoModesKMSDRM,
         // .getVideoMode = _glfwGetVideoModeKMSDRM,
         // .getGammaRamp = _glfwGetGammaRampKMSDRM,
