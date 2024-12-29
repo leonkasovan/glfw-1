@@ -56,5 +56,5 @@ void _glfwDetectKeyboardConnectionLinux(void);
 
 GLFWbool _glfwInitKeyboardsLinux(void);
 void _glfwTerminateKeyboardsLinux(void);
-GLFWbool _glfwPollKeyboardLinux(_GLFWkeyboard* js, int mode);
+GLFWbool _glfwPollKeyboardLinux();
 

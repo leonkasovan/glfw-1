@@ -125,7 +125,7 @@ int main(void) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-    GLFWwindow* window = glfwCreateWindow(1920, 1080, "OpenGL ES 2.0 Triangle (EGL)", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(0, 0, "OpenGL ES 2.0 Triangle (EGL)", NULL, NULL);
     if (!window) {
         // glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
         // printf("examples/triangle-opengles.c:%d: GLFW_NATIVE_CONTEXT_API\n", __LINE__);

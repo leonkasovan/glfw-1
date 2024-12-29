@@ -109,62 +109,34 @@ static void handleEvents(double* timeout) {
     if (_glfw.joysticksInitialized)
         _glfwDetectJoystickConnectionLinux();
 #endif
-#if defined(GLFW_BUILD_LINUX_KEYBOARD)
-    if (_glfw.keyboardsInitialized)
-        _glfwDetectKeyboardConnectionLinux();
-#endif
+// #if defined(GLFW_BUILD_LINUX_KEYBOARD)
+//     if (_glfw.keyboardsInitialized)
+//         _glfwDetectKeyboardConnectionLinux();
+// #endif
 
     GLFWbool event = GLFW_FALSE;
-    struct pollfd fds[GLFW_KEYBOARD_LAST];
+    struct pollfd fds[1];
 
-    for (int jid = 0; jid <= GLFW_KEYBOARD_LAST; jid++) {
-        _GLFWkeyboard* js = _glfw.keyboards + jid;
-        if (js->connected) {
-            fds[jid].fd = js->linjs.fd;
-            fds[jid].events = POLLIN;
-        } else {
-            fds[jid].fd = -1;
-        }
+    if (_glfw.kmsdrm.keyboard_fd > 0) {
+        fds[0].fd = _glfw.kmsdrm.keyboard_fd;
+        fds[0].events = POLLIN;
     }
 
+    GLFWbool ret = 0;
     while (!event) {
-        if (!_glfwPollPOSIX(fds, sizeof(fds) / sizeof(fds[0]), timeout)) {
+        ret = _glfwPollPOSIX(fds, sizeof(fds) / sizeof(fds[0]), timeout);
+        if (ret == -1) { // Poll error
+            perror("poll");
+            return;
+        } else if (ret == 0) { // Timeout occurred! No data
             return;
         }
 
-        for (int jid = 0; jid <= GLFW_KEYBOARD_LAST; jid++) {
-            _GLFWkeyboard* js = _glfw.keyboards + jid;
-            if (js->connected && (fds[jid].revents & POLLIN)) {
-                _glfwPollKeyboardLinux(js, _GLFW_POLL_ALL);
-                event = GLFW_TRUE;
-            }
+        // Data available then handle event
+        if (fds[0].revents & POLLIN) {
+            _glfwPollKeyboardLinux();
+            event = GLFW_TRUE;
         }
-
-
-        // if (fds[DISPLAY_FD].revents & POLLIN) {
-        //     wl_display_read_events(_glfw.wl.display);
-        //     if (wl_display_dispatch_pending(_glfw.wl.display) > 0)
-        //         event = GLFW_TRUE;
-        // } else
-        //     wl_display_cancel_read(_glfw.wl.display);
-
-        // if (fds[KEYREPEAT_FD].revents & POLLIN) {
-        //     uint64_t repeats;
-
-        //     if (read(_glfw.wl.keyRepeatTimerfd, &repeats, sizeof(repeats)) == 8) {
-        //         for (uint64_t i = 0; i < repeats; i++) {
-        //             _glfwInputKey(_glfw.wl.keyboardFocus,
-        //                 translateKey(_glfw.wl.keyRepeatScancode),
-        //                 _glfw.wl.keyRepeatScancode,
-        //                 GLFW_PRESS,
-        //                 _glfw.wl.xkb.modifiers);
-        //             inputText(_glfw.wl.keyboardFocus, _glfw.wl.keyRepeatScancode);
-        //         }
-
-        //         event = GLFW_TRUE;
-        //     }
-        // }
-
     }
 }
 
