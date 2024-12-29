@@ -79,6 +79,7 @@ typedef struct _GLFWcursor      _GLFWcursor;
 typedef struct _GLFWmapelement  _GLFWmapelement;
 typedef struct _GLFWmapping     _GLFWmapping;
 typedef struct _GLFWjoystick    _GLFWjoystick;
+typedef struct _GLFWkeyboard    _GLFWkeyboard;
 typedef struct _GLFWtls         _GLFWtls;
 typedef struct _GLFWmutex       _GLFWmutex;
 
@@ -649,6 +650,24 @@ struct _GLFWjoystick {
     GLFW_PLATFORM_JOYSTICK_STATE
 };
 
+// Keyboard structure
+//
+struct _GLFWkeyboard {
+    GLFWbool        allocated;
+    GLFWbool        connected;
+    char            name[128];
+    char            guid[33];
+    float* axes;
+    int             axisCount;
+    unsigned char* buttons;
+    int             buttonCount;
+    unsigned char* hats;
+    int             hatCount;
+    void* userPointer;
+    // This is defined in platform.h
+    GLFW_PLATFORM_KEYBOARD_STATE
+};
+
 // Thread local storage structure
 //
 struct _GLFWtls {
@@ -773,6 +792,10 @@ struct _GLFWlibrary {
     _GLFWjoystick       joysticks[GLFW_JOYSTICK_LAST + 1];
     _GLFWmapping* mappings;
     int                 mappingCount;
+#ifdef GLFW_BUILD_LINUX_KEYBOARD
+    GLFWbool            keyboardsInitialized;
+    _GLFWkeyboard       keyboards[GLFW_KEYBOARD_LAST + 1];
+#endif
 
     _GLFWtls            errorSlot;
     _GLFWtls            contextSlot;
@@ -973,6 +996,12 @@ _GLFWjoystick* _glfwAllocJoystick(const char* name,
     int hatCount);
 void _glfwFreeJoystick(_GLFWjoystick* js);
 void _glfwCenterCursorInContentArea(_GLFWwindow* window);
+_GLFWkeyboard* _glfwAllocKeyboard(const char* name,
+    const char* guid,
+    int axisCount,
+    int buttonCount,
+    int hatCount);
+void _glfwFreeKeyboard(_GLFWkeyboard* js);
 
 GLFWbool _glfwInitEGL(void);
 void _glfwTerminateEGL(void);

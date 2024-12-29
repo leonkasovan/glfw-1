@@ -104,72 +104,67 @@ int init_gbm(struct gbm* gbm, int drm_fd, int w, int h, uint32_t format, uint64_
     return init_surface(gbm, modifier);
 }
 
-static void inputText(_GLFWwindow* window, uint32_t scancode) {
-    // const xkb_keysym_t* keysyms;
-    // const xkb_keycode_t keycode = scancode + 8;
-
-    // if (xkb_state_key_get_syms(_glfw.wl.xkb.state, keycode, &keysyms) == 1) {
-    //     const xkb_keysym_t keysym = composeSymbol(keysyms[0]);
-    //     const uint32_t codepoint = xkb_keysym_to_utf32(keysym);
-    //     if (codepoint != 0) {
-    //         const int mods = _glfw.wl.xkb.modifiers;
-    //         const int plain = !(mods & (GLFW_MOD_CONTROL | GLFW_MOD_ALT));
-    //         _glfwInputChar(window, codepoint, mods, plain);
-    //     }
-    // }
-}
-
 static void handleEvents(double* timeout) {
 #if defined(GLFW_BUILD_LINUX_JOYSTICK)
     if (_glfw.joysticksInitialized)
         _glfwDetectJoystickConnectionLinux();
 #endif
+#if defined(GLFW_BUILD_LINUX_KEYBOARD)
+    if (_glfw.keyboardsInitialized)
+        _glfwDetectKeyboardConnectionLinux();
+#endif
 
     GLFWbool event = GLFW_FALSE;
-    enum { DISPLAY_FD, KEYBOARD_FD, CURSOR_FD };
-    struct pollfd fds[] =
-    {
-        [DISPLAY_FD] = { -1, POLLIN },
-        [KEYBOARD_FD] = { _glfw.kmsdrm.keyboard_fd, POLLIN },
-        [CURSOR_FD] = { -1, POLLIN }
-    };
+    struct pollfd fds[GLFW_KEYBOARD_LAST];
+
+    for (int jid = 0; jid <= GLFW_KEYBOARD_LAST; jid++) {
+        _GLFWkeyboard* js = _glfw.keyboards + jid;
+        if (js->connected) {
+            fds[jid].fd = js->linjs.fd;
+            fds[jid].events = POLLIN;
+        } else {
+            fds[jid].fd = -1;
+        }
+    }
 
     while (!event) {
         if (!_glfwPollPOSIX(fds, sizeof(fds) / sizeof(fds[0]), timeout)) {
             return;
         }
 
-        if (fds[DISPLAY_FD].revents & POLLIN) {
-            // wl_display_read_events(_glfw.wl.display);
-            // if (wl_display_dispatch_pending(_glfw.wl.display) > 0)
-            event = GLFW_TRUE;
-        } // else
-            // (NULL); // wl_display_cancel_read(_glfw.wl.display);
-
-        if (fds[KEYBOARD_FD].revents & POLLIN) {
-            struct input_event ev[64];
-
-            int rd = read(fds[DISPLAY_FD].fd, ev, sizeof(ev));
-            if (rd >= (int) sizeof(struct input_event)) {
-                for (int i = 0; i < rd / sizeof(struct input_event); i++) {
-                    if (ev[i].type == EV_KEY) {
-                        int scancode = ev[i].code;
-                        unsigned int translate_key = scancode + 1000;
-                        int action = ev[i].value;
-                        int mods = 0;
-
-                        // _glfwInputKey(_glfw.wl.keyboardFocus, translateKey(_glfw.wl.keyRepeatScancode), _glfw.wl.keyRepeatScancode, GLFW_PRESS, _glfw.wl.xkb.modifiers);
-                        _glfwInputKey(_glfw.kmsdrm.window, translate_key, scancode, action, mods);
-                        inputText(_glfw.kmsdrm.window, scancode);
-                    }
-
-                }
+        for (int jid = 0; jid <= GLFW_KEYBOARD_LAST; jid++) {
+            _GLFWkeyboard* js = _glfw.keyboards + jid;
+            if (js->connected && (fds[jid].revents & POLLIN)) {
+                _glfwPollKeyboardLinux(js, _GLFW_POLL_ALL);
+                event = GLFW_TRUE;
             }
         }
-        if (fds[CURSOR_FD].revents & POLLIN) {
-            // handle cursor event
-            event = GLFW_TRUE;
-        }
+
+
+        // if (fds[DISPLAY_FD].revents & POLLIN) {
+        //     wl_display_read_events(_glfw.wl.display);
+        //     if (wl_display_dispatch_pending(_glfw.wl.display) > 0)
+        //         event = GLFW_TRUE;
+        // } else
+        //     wl_display_cancel_read(_glfw.wl.display);
+
+        // if (fds[KEYREPEAT_FD].revents & POLLIN) {
+        //     uint64_t repeats;
+
+        //     if (read(_glfw.wl.keyRepeatTimerfd, &repeats, sizeof(repeats)) == 8) {
+        //         for (uint64_t i = 0; i < repeats; i++) {
+        //             _glfwInputKey(_glfw.wl.keyboardFocus,
+        //                 translateKey(_glfw.wl.keyRepeatScancode),
+        //                 _glfw.wl.keyRepeatScancode,
+        //                 GLFW_PRESS,
+        //                 _glfw.wl.xkb.modifiers);
+        //             inputText(_glfw.wl.keyboardFocus, _glfw.wl.keyRepeatScancode);
+        //         }
+
+        //         event = GLFW_TRUE;
+        //     }
+        // }
+
     }
 }
 
@@ -239,14 +234,14 @@ GLFWbool _glfwCreateWindowKMSDRM(_GLFWwindow* window, const _GLFWwndconfig* wndc
             debug_printf("_glfwCreateWindowKMSDRM: eglSwapBuffers error\n");
             return GLFW_FALSE;
         }
-        puts("_glfwCreateWindowKMSDRM: gbm_surface_lock_front_buffer");
+        debug_puts("_glfwCreateWindowKMSDRM: gbm_surface_lock_front_buffer");
         _glfw.kmsdrm.gbm.bo = gbm_surface_lock_front_buffer(_glfw.kmsdrm.gbm.surface);
         if (!_glfw.kmsdrm.gbm.bo) {
             debug_printf("gbm_surface_lock_front_buffer error.\n");
             return GLFW_FALSE;
         }
     }
-    puts("_glfwCreateWindowKMSDRM: drm_fb_get_from_bo");
+    debug_puts("_glfwCreateWindowKMSDRM: drm_fb_get_from_bo");
     _glfw.kmsdrm.gbm.fb = drm_fb_get_from_bo(_glfw.kmsdrm.gbm.bo);
     if (!_glfw.kmsdrm.gbm.fb) {
         debug_printf("Failed to get a new framebuffer BO\n");
@@ -258,8 +253,9 @@ GLFWbool _glfwCreateWindowKMSDRM(_GLFWwindow* window, const _GLFWwndconfig* wndc
         return GLFW_FALSE;
     }
 
-
+#if defined(GLFW_BUILD_LINUX_KEYBOARD)
     _glfw.kmsdrm.window = window;
+#endif
     return GLFW_TRUE;
 }
 
@@ -279,6 +275,13 @@ void _glfwGetFramebufferSizeKMSDRM(_GLFWwindow* window, int* width, int* height)
 void _glfwPollEventsKMSDRM(void) {
     double timeout = 0.0;
     handleEvents(&timeout);
+    // #if defined(GLFW_BUILD_LINUX_KEYBOARD)
+    //     for (int jid = 0; jid <= GLFW_KEYBOARD_LAST; jid++) {
+    //         _GLFWkeyboard* js = _glfw.keyboards + jid;
+    //         if (js->connected)
+    //             _glfwPollKeyboardLinux(js, _GLFW_POLL_ALL);
+    //     }
+    // #endif    
 }
 #endif
 

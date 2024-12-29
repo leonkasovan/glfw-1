@@ -25,23 +25,24 @@
 //
 //========================================================================
 /*
-glfwGetJoystickAxes
-glfwGetJoystickButtons
-glfwGetJoystickHats
-glfwGetJoystickName
-glfwGetJoystickGUID
-glfwJoystickIsGamepad
-glfwGetGamepadName
-glfwGetGamepadState
-    _glfwPollJoystickLinux
-        pollAbsState(js);
-        handleKeyEvent(js, e.code, e.value);
-        handleAbsEvent(js, e.code, e.value);
+glfwPollEvents
+    _glfwPollEventsWayland
+        void handleEvents(double* timeout)
+            _glfwDetectJoystickConnectionLinux();
+            _glfwDetectKeyboardConnectionLinux();
+            _glfwPollPOSIX(struct pollfd* fds, nfds_t count, double* timeout)
+    _glfwPollEventsKMSDRM
+        void handleEvents(double* timeout)  // FIX src/kmsdrm_window.c
+            _glfwDetectJoystickConnectionLinux();
+            _glfwDetectKeyboardConnectionLinux();
+            _glfwPollPOSIX(struct pollfd* fds, nfds_t count, double* timeout)
+            _glfwPollKeyboardLinux(js, _GLFW_POLL_ALL);
+                handleKeyEvent(js, e.code, e.value);
 */
 
 #include "internal.h"
 
-#if defined(GLFW_BUILD_LINUX_JOYSTICK)
+#if defined(GLFW_BUILD_LINUX_KEYBOARD)
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -59,86 +60,74 @@ glfwGetGamepadState
 #define SYN_DROPPED 3
 #endif
 
-// Apply an EV_KEY event to the specified joystick
-//
-static void handleKeyEvent(_GLFWjoystick* js, int code, int value) {
-    _glfwInputJoystickButton(js,
-        js->linjs.keyMap[code - BTN_MISC],
-        value ? GLFW_PRESS : GLFW_RELEASE);
-}
-
-// Apply an EV_ABS event to the specified joystick
-//
-static void handleAbsEvent(_GLFWjoystick* js, int code, int value) {
-    const int index = js->linjs.absMap[code];
-
-    if (code >= ABS_HAT0X && code <= ABS_HAT3Y) {
-        static const char stateMap[3][3] =
-        {
-            { GLFW_HAT_CENTERED, GLFW_HAT_UP,       GLFW_HAT_DOWN },
-            { GLFW_HAT_LEFT,     GLFW_HAT_LEFT_UP,  GLFW_HAT_LEFT_DOWN },
-            { GLFW_HAT_RIGHT,    GLFW_HAT_RIGHT_UP, GLFW_HAT_RIGHT_DOWN },
-        };
-
-        const int hat = (code - ABS_HAT0X) / 2;
-        const int axis = (code - ABS_HAT0X) % 2;
-        int* state = js->linjs.hats[hat];
-
-        // NOTE: Looking at several input drivers, it seems all hat events use
-        //       -1 for left / up, 0 for centered and 1 for right / down
-        if (value == 0)
-            state[axis] = 0;
-        else if (value < 0)
-            state[axis] = 1;
-        else if (value > 0)
-            state[axis] = 2;
-
-        _glfwInputJoystickHat(js, index, stateMap[state[0]][state[1]]);
-    } else {
-        const struct input_absinfo* info = &js->linjs.absInfo[code];
-        float normalized = value;
-
-        const int range = info->maximum - info->minimum;
-        if (range) {
-            // Normalize to 0.0 -> 1.0
-            normalized = (normalized - info->minimum) / range;
-            // Normalize to -1.0 -> 1.0
-            normalized = normalized * 2.0f - 1.0f;
-        }
-
-        _glfwInputJoystickAxis(js, index, normalized);
-    }
-}
-
-// Poll state of absolute axes
-//
-static void pollAbsState(_GLFWjoystick* js) {
-    for (int code = 0; code < ABS_CNT; code++) {
-        if (js->linjs.absMap[code] < 0)
-            continue;
-
-        struct input_absinfo* info = &js->linjs.absInfo[code];
-
-        if (ioctl(js->linjs.fd, EVIOCGABS(code), info) < 0)
-            continue;
-
-        handleAbsEvent(js, code, info->value);
-    }
-}
-
 #define isBitSet(bit, arr) (arr[(bit) / 8] & (1 << ((bit) % 8)))
 
-// Attempt to open the specified joystick device
+static int translateKey(uint32_t scancode) {
+    if (scancode < sizeof(_glfw.kmsdrm.keycodes) / sizeof(_glfw.kmsdrm.keycodes[0]))
+        return _glfw.kmsdrm.keycodes[scancode];
+
+    return GLFW_KEY_UNKNOWN;
+}
+
+int isKeyboardDevice(const char* devicePath, char* deviceName, size_t nameSize) {
+    int fd = open(devicePath, O_RDONLY);
+    if (fd < 0) {
+        return 0;
+    }
+
+    struct input_id deviceInfo;
+    if (ioctl(fd, EVIOCGID, &deviceInfo) < 0) {
+        close(fd);
+        return 0;
+    }
+
+    if (ioctl(fd, EVIOCGNAME(nameSize), deviceName) < 0) {
+        strncpy(deviceName, "Unknown", nameSize - 1);
+        deviceName[nameSize - 1] = '\0';
+    }
+
+    unsigned long evbit[EV_MAX / sizeof(unsigned long)];
+    if (ioctl(fd, EVIOCGBIT(0, sizeof(evbit)), evbit) < 0) {
+        close(fd);
+        return 0;
+    }
+
+    unsigned long keybit[KEY_MAX / sizeof(unsigned long)];
+    if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) {
+        close(fd);
+        return 0;
+    }
+
+    close(fd);
+
+    // Check if the device supports EV_KEY events and has keys typically found on keyboards
+    return (evbit[EV_KEY / (8 * sizeof(unsigned long))] & (1 << (EV_KEY % (8 * sizeof(unsigned long))))) &&
+        (keybit[KEY_A / (8 * sizeof(unsigned long))] & (1 << (KEY_A % (8 * sizeof(unsigned long)))));
+}
+
+// Apply an EV_KEY event to the specified keyboard
 //
-static GLFWbool openJoystickDevice(const char* path) {
-    for (int jid = 0; jid <= GLFW_JOYSTICK_LAST; jid++) {
-        if (!_glfw.joysticks[jid].connected)
+// static void handleKeyEvent(_GLFWkeyboard* js, int code, int value) {
+    // _glfwInputKeyboardButton(js,        js->linjs.keyMap[code - BTN_MISC],        value ? GLFW_PRESS : GLFW_RELEASE);
+//     _glfwInputKey(_glfw.kmsdrm.window, code, value ? GLFW_PRESS : GLFW_RELEASE, 0, 0);
+// }
+
+// Attempt to open the specified keyboard device
+//
+static GLFWbool openKeyboardDevice(const char* path) {
+    char name[256] = "";
+
+    for (int jid = 0; jid <= GLFW_KEYBOARD_LAST; jid++) {
+        if (!_glfw.keyboards[jid].connected)
             continue;
-        if (strcmp(_glfw.joysticks[jid].linjs.path, path) == 0)
+        if (strcmp(_glfw.keyboards[jid].linjs.path, path) == 0)
             return GLFW_FALSE;
     }
 
-    _GLFWjoystickLinux linjs = { 0 };
+    if (!isKeyboardDevice(path, name, sizeof(name)))
+        return GLFW_FALSE;
+
+    _GLFWkeyboardLinux linjs = { 0 };
     linjs.fd = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     if (linjs.fd == -1)
         return GLFW_FALSE;
@@ -159,20 +148,8 @@ static GLFWbool openJoystickDevice(const char* path) {
         return GLFW_FALSE;
     }
 
-    // Ensure this device supports the events expected of a joystick
-    if (!isBitSet(EV_ABS, evBits)) {
-        close(linjs.fd);
-        return GLFW_FALSE;
-    }
-
-    char name[256] = "";
-
-    if (ioctl(linjs.fd, EVIOCGNAME(sizeof(name)), name) < 0)
-        strncpy(name, "Unknown", sizeof(name));
-
     char guid[33] = "";
-
-    // Generate a joystick GUID that matches the SDL 2.0.5+ one
+    // Generate a keyboard GUID that matches the SDL 2.0.5+ one
     if (id.vendor && id.product && id.version) {
         sprintf(guid, "%02x%02x0000%02x%02x0000%02x%02x0000%02x%02x0000",
             id.bustype & 0xff, id.bustype >> 8,
@@ -216,8 +193,7 @@ static GLFWbool openJoystickDevice(const char* path) {
         }
     }
 
-    _GLFWjoystick* js =
-        _glfwAllocJoystick(name, guid, axisCount, buttonCount, hatCount);
+    _GLFWkeyboard* js = _glfwAllocKeyboard(name, guid, axisCount, buttonCount, hatCount);
     if (!js) {
         close(linjs.fd);
         return GLFW_FALSE;
@@ -226,27 +202,24 @@ static GLFWbool openJoystickDevice(const char* path) {
     strncpy(linjs.path, path, sizeof(linjs.path) - 1);
     memcpy(&js->linjs, &linjs, sizeof(linjs));
 
-    pollAbsState(js);
-
-    _glfwInputJoystick(js, GLFW_CONNECTED);
+    debug_printf("openKeyboardDevice: %s \"%s\" [OK]\n", path, name);
+    js->connected = GLFW_TRUE;
     return GLFW_TRUE;
 }
 
-#undef isBitSet
-
-// Frees all resources associated with the specified joystick
+// Frees all resources associated with the specified keyboard
 //
-static void closeJoystick(_GLFWjoystick* js) {
-    _glfwInputJoystick(js, GLFW_DISCONNECTED);
+static void closeKeyboard(_GLFWkeyboard* js) {
+    js->connected = GLFW_FALSE;
     close(js->linjs.fd);
-    _glfwFreeJoystick(js);
+    _glfwFreeKeyboard(js);
 }
 
-// Lexically compare joysticks by name; used by qsort
+// Lexically compare keyboards by name; used by qsort
 //
-static int compareJoysticks(const void* fp, const void* sp) {
-    const _GLFWjoystick* fj = fp;
-    const _GLFWjoystick* sj = sp;
+static int compareKeyboards(const void* fp, const void* sp) {
+    const _GLFWkeyboard* fj = fp;
+    const _GLFWkeyboard* sj = sp;
     return strcmp(fj->linjs.path, sj->linjs.path);
 }
 
@@ -255,7 +228,7 @@ static int compareJoysticks(const void* fp, const void* sp) {
 //////                       GLFW internal API                      //////
 //////////////////////////////////////////////////////////////////////////
 
-void _glfwDetectJoystickConnectionLinux(void) {
+void _glfwDetectKeyboardConnectionLinux(void) {
     if (_glfw.linjs.inotify <= 0)
         return;
 
@@ -276,11 +249,11 @@ void _glfwDetectJoystickConnectionLinux(void) {
         snprintf(path, sizeof(path), "/dev/input/%s", e->name);
 
         if (e->mask & (IN_CREATE | IN_ATTRIB))
-            openJoystickDevice(path);
+            openKeyboardDevice(path);
         else if (e->mask & IN_DELETE) {
-            for (int jid = 0; jid <= GLFW_JOYSTICK_LAST; jid++) {
-                if (strcmp(_glfw.joysticks[jid].linjs.path, path) == 0) {
-                    closeJoystick(_glfw.joysticks + jid);
+            for (int jid = 0; jid <= GLFW_KEYBOARD_LAST; jid++) {
+                if (strcmp(_glfw.keyboards[jid].linjs.path, path) == 0) {
+                    closeKeyboard(_glfw.keyboards + jid);
                     break;
                 }
             }
@@ -293,7 +266,7 @@ void _glfwDetectJoystickConnectionLinux(void) {
 //////                       GLFW platform API                      //////
 //////////////////////////////////////////////////////////////////////////
 
-GLFWbool _glfwInitJoysticksLinux(void) {
+GLFWbool _glfwInitKeyboardsLinux(void) {
     const char* dirname = "/dev/input";
 
     _glfw.linjs.inotify = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
@@ -330,24 +303,24 @@ GLFWbool _glfwInitJoysticksLinux(void) {
 
             snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
 
-            if (openJoystickDevice(path))
+            if (openKeyboardDevice(path))
                 count++;
         }
 
         closedir(dir);
     }
 
-    // Continue with no joysticks if enumeration fails
+    // Continue with no keyboards if enumeration fails
 
-    qsort(_glfw.joysticks, count, sizeof(_GLFWjoystick), compareJoysticks);
+    qsort(_glfw.keyboards, count, sizeof(_GLFWkeyboard), compareKeyboards);
     return GLFW_TRUE;
 }
 
-void _glfwTerminateJoysticksLinux(void) {
-    for (int jid = 0; jid <= GLFW_JOYSTICK_LAST; jid++) {
-        _GLFWjoystick* js = _glfw.joysticks + jid;
+void _glfwTerminateKeyboardsLinux(void) {
+    for (int jid = 0; jid <= GLFW_KEYBOARD_LAST; jid++) {
+        _GLFWkeyboard* js = _glfw.keyboards + jid;
         if (js->connected)
-            closeJoystick(js);
+            closeKeyboard(js);
     }
 
     if (_glfw.linjs.inotify > 0) {
@@ -361,46 +334,27 @@ void _glfwTerminateJoysticksLinux(void) {
         regfree(&_glfw.linjs.regex);
 }
 
-GLFWbool _glfwPollJoystickLinux(_GLFWjoystick* js, int mode) {
+GLFWbool _glfwPollKeyboardLinux(_GLFWkeyboard* js, int mode) {
     // Read all queued events (non-blocking)
     for (;;) {
         struct input_event e;
-
         errno = 0;
         if (read(js->linjs.fd, &e, sizeof(e)) < 0) {
-            // Reset the joystick slot if the device was disconnected
+            // Reset the keyboard slot if the device was disconnected
             if (errno == ENODEV)
-                closeJoystick(js);
-
+                closeKeyboard(js);
             break;
         }
-
-        if (e.type == EV_SYN) {
-            if (e.code == SYN_DROPPED)
-                _glfw.linjs.dropped = GLFW_TRUE;
-            else if (e.code == SYN_REPORT) {
-                _glfw.linjs.dropped = GLFW_FALSE;
-                pollAbsState(js);
-            }
+        debug_printf("PollKeyboardLinux: %d %d %d\n", e.type, e.code, e.value);
+        if (e.type == EV_KEY) {
+            // handleKeyEvent(js, e.code, e.value);
+            // _glfwInputKey(_glfw.kmsdrm.window, 0, e.code, e.value , 0);
+            _glfwInputKey(_glfw.kmsdrm.window, translateKey(e.code), e.code, e.value ? GLFW_PRESS : GLFW_RELEASE, 0);
         }
 
-        if (_glfw.linjs.dropped)
-            continue;
-
-        if (e.type == EV_KEY)
-            handleKeyEvent(js, e.code, e.value);
-        else if (e.type == EV_ABS)
-            handleAbsEvent(js, e.code, e.value);
     }
-
     return js->connected;
 }
 
-const char* _glfwGetMappingNameLinux(void) {
-    return "Linux";
-}
-
-void _glfwUpdateGamepadGUIDLinux(char* guid) {}
-
-#endif // GLFW_BUILD_LINUX_JOYSTICK
+#endif // GLFW_BUILD_LINUX_KEYBOARD
 

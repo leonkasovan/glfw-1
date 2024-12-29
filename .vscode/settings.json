@@ -9,6 +9,7 @@
         "unordered_map": "c",
         "vector": "c",
         "iterator": "c",
-        "string_view": "c"
+        "string_view": "c",
+        "glfw3.h": "c"
     }
 }

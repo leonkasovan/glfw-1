@@ -61,6 +61,7 @@ if (GLFW_BUILD_KMSDRM)
     link_libraries(gbm)
     target_compile_definitions(glfw PRIVATE _GLFW_KMSDRM)
     target_sources(glfw PRIVATE kmsdrm_init.c kmsdrm_platform.h
+    linux_keyboard.h linux_keyboard.c
                                 kmsdrm_monitor.c kmsdrm_window.c)
 endif()
 

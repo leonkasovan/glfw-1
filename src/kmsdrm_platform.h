@@ -132,6 +132,7 @@ typedef struct _GLFWlibraryKMSDRM {
     bool nonblocking;
     int keyboard_fd;
     _GLFWwindow* window;
+    short int keycodes[256];
 #ifdef DEBUG
     int64_t start_time;
     int64_t report_time;
