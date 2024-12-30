@@ -373,13 +373,6 @@ int init_drm(struct drm* drm, const char* device, const char* mode_str, int conn
     if (!drm->mode) {
         _glfwInputError(GLFW_PLATFORM_ERROR, "init_drm: could not find mode!");
         return -1;
-    } else {    // add current_mode to _GLFWmonitor* monitor.mode[0]
-        // _glfw.current_monitor.mode[0] = current_mode;
-        _glfw.current_mode.width = current_mode.width;
-        _glfw.current_mode.height = current_mode.height;
-        _glfw.current_mode.refresh = current_mode.refresh;
-        _glfw.current_monitor.modeCount = 1;
-        _glfw.current_monitor.modes = &_glfw.current_mode;
     }
 
     /* find encoder: */
@@ -565,9 +558,18 @@ GLFWbool _glfwInitKMSDRM(void) {
         debug_printf("_glfwInitKMSDRM: Initializing DRM [FAIL:%d]\n", ret);
     } else {    // Register the DRM device as a monitor
         debug_printf("_glfwInitKMSDRM: Initializing DRM fullscreen %dx%d [OK]\n", _glfw.kmsdrm.drm.mode->hdisplay, _glfw.kmsdrm.drm.mode->vdisplay);
-        _glfw.current_monitor.widthMM = _glfw.kmsdrm.drm.mode->hdisplay;
-        _glfw.current_monitor.heightMM = _glfw.kmsdrm.drm.mode->vdisplay;
-        _glfwInputMonitor(&_glfw.current_monitor, GLFW_CONNECTED, _GLFW_INSERT_LAST);
+        _GLFWmonitor *monitor = _glfwAllocMonitor("DRM Monitor", _glfw.kmsdrm.drm.mode->hdisplay, _glfw.kmsdrm.drm.mode->vdisplay);
+        _glfwInputMonitor(monitor, GLFW_CONNECTED, _GLFW_INSERT_LAST);
+        GLFWvidmode mode;
+        mode.width = _glfw.kmsdrm.drm.mode->hdisplay;
+        mode.height = _glfw.kmsdrm.drm.mode->vdisplay;
+        mode.redBits = 8;
+        mode.greenBits = 8;
+        mode.blueBits = 8;
+        mode.refreshRate = _glfw.kmsdrm.drm.mode->vrefresh;
+        monitor->modeCount = 1;
+        monitor->modes = _glfw_calloc(1, sizeof(GLFWvidmode));
+        monitor->modes[0] = mode;
     }
 
     return !ret;
@@ -618,7 +620,7 @@ GLFWbool _glfwConnectKMSDRM(int platformID, _GLFWplatform* platform) {
         .getMappingName = _glfwGetMappingNameNull,
         .updateGamepadGUID = _glfwUpdateGamepadGUIDNull,
 #endif
-        // .freeMonitor = _glfwFreeMonitorKMSDRM,
+        .freeMonitor = _glfwFreeMonitorKMSDRM,
         .getMonitorPos = _glfwGetMonitorPosKMSDRM,
         .getMonitorContentScale = _glfwGetMonitorContentScaleKMSDRM,
         .getMonitorWorkarea = _glfwGetMonitorWorkareaKMSDRM,

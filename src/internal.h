@@ -787,10 +787,6 @@ struct _GLFWlibrary {
 
     _GLFWmonitor** monitors;
     int                 monitorCount;
-#ifdef _GLFW_KMSDRM
-    _GLFWmonitor current_monitor;
-    GLFWvidmode current_mode;
-#endif    
 
     GLFWbool            joysticksInitialized;
     _GLFWjoystick       joysticks[GLFW_JOYSTICK_LAST + 1];

@@ -211,59 +211,59 @@ static void animate(void) {
 
 /* change view angle, exit upon ESC */
 void key(GLFWwindow* window, int k, int s, int action, int mods) {
-  printf("key=%d scancode=%d action=%d mods=%d\n", k, s, action, mods);
+  // printf("key=%d scancode=%d action=%d mods=%d\n", k, s, action, mods);
   if (action != GLFW_PRESS) return;
 
-  switch (s) {
-  case KEY_Z:
-    view_rotz += 5.0;
-    break;
-  case KEY_A:
-    view_rotz -= 5.0;
-    break;
-  case KEY_ESC:
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-    break;
-  case KEY_UP:
-    view_rotx += 5.0;
-    break;
-  case KEY_DOWN:
-    view_rotx -= 5.0;
-    break;
-  case KEY_LEFT:
-    view_roty += 5.0;
-    break;
-  case KEY_RIGHT:
-    view_roty -= 5.0;
-    break;
-  default:
-    return;
-  }
-  // switch (k) {
-  // case GLFW_KEY_Z:
-  //   if (mods & GLFW_MOD_SHIFT)
-  //     view_rotz -= 5.0;
-  //   else
-  //     view_rotz += 5.0;
+  // switch (s) {
+  // case KEY_Z:
+  //   view_rotz += 5.0;
   //   break;
-  // case GLFW_KEY_ESCAPE:
+  // case KEY_A:
+  //   view_rotz -= 5.0;
+  //   break;
+  // case KEY_ESC:
   //   glfwSetWindowShouldClose(window, GLFW_TRUE);
   //   break;
-  // case GLFW_KEY_UP:
+  // case KEY_UP:
   //   view_rotx += 5.0;
   //   break;
-  // case GLFW_KEY_DOWN:
+  // case KEY_DOWN:
   //   view_rotx -= 5.0;
   //   break;
-  // case GLFW_KEY_LEFT:
+  // case KEY_LEFT:
   //   view_roty += 5.0;
   //   break;
-  // case GLFW_KEY_RIGHT:
+  // case KEY_RIGHT:
   //   view_roty -= 5.0;
   //   break;
   // default:
   //   return;
   // }
+  switch (k) {
+  case GLFW_KEY_Z:
+    if (mods & GLFW_MOD_SHIFT)
+      view_rotz -= 5.0;
+    else
+      view_rotz += 5.0;
+    break;
+  case GLFW_KEY_ESCAPE:
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
+    break;
+  case GLFW_KEY_UP:
+    view_rotx += 5.0;
+    break;
+  case GLFW_KEY_DOWN:
+    view_rotx -= 5.0;
+    break;
+  case GLFW_KEY_LEFT:
+    view_roty += 5.0;
+    break;
+  case GLFW_KEY_RIGHT:
+    view_roty -= 5.0;
+    break;
+  default:
+    return;
+  }
 }
 
 

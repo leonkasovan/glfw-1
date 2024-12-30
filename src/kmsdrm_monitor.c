@@ -56,9 +56,13 @@ void _glfwGetMonitorWorkareaKMSDRM(_GLFWmonitor* monitor, int* xpos, int* ypos, 
     if (height)
         *height = monitor->modes[0].height;
 }
+
+void _glfwFreeMonitorKMSDRM(_GLFWmonitor *monitor){
+    debug_puts("_glfwFreeMonitorKMSDRM not implemented");
+}
 #endif
 
-#if defined(_GLFW_WAYLAND)
+#if defined(_GLFW_WAYLAND_XXX)
 #include "wayland-client-protocol.h"
 
 

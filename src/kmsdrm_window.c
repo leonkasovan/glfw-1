@@ -159,7 +159,6 @@ EGLNativeWindowType _glfwGetEGLNativeWindowKMSDRM(_GLFWwindow* window) {
 }
 
 GLFWbool _glfwCreateWindowKMSDRM(_GLFWwindow* window, const _GLFWwndconfig* wndconfig, const _GLFWctxconfig* ctxconfig, const _GLFWfbconfig* fbconfig) {
-    // debug_printf("kmsdrm_window.c:%d _glfwCreateWindowKMSDRM BEGIN\n", __LINE__);
     if (init_gbm(&_glfw.kmsdrm.gbm, _glfw.kmsdrm.drm.fd, wndconfig->width, wndconfig->height, _glfw.kmsdrm.format, _glfw.kmsdrm.modifier)) {
         debug_printf("Failed to initialize GBM.\n");
         return GLFW_FALSE;
@@ -167,7 +166,7 @@ GLFWbool _glfwCreateWindowKMSDRM(_GLFWwindow* window, const _GLFWwndconfig* wndc
         debug_printf("Initializing GBM [OK]\n");
     }
 
-    // Initialize EGL TODO: samakan _glfwInitEGL dengan init_egl
+    // Initialize EGL
     if (ctxconfig->client != GLFW_NO_API) {
         if (ctxconfig->source == GLFW_EGL_CONTEXT_API || ctxconfig->source == GLFW_NATIVE_CONTEXT_API) {
             if (!_glfwInitEGL()) {
@@ -276,5 +275,23 @@ void _glfwSetCursorModeKMSDRM(_GLFWwindow* window, int mode){
     debug_printf("_glfwSetCursorModeKMSDRM not implemented\n\tmode=%d\n", mode);
 }
 
+const char *_glfwGetClipboardStringKMSDRM(void){
+    debug_puts("_glfwGetClipboardStringKMSDRM not implemented");
+    return "";
+}
+
+GLFWvidmode *_glfwGetVideoModesKMSDRM(_GLFWmonitor *monitor, int *found){
+    *found = 1;
+    return _glfw.monitors[0]->modes;
+}
+
+GLFWbool _glfwGetVideoModeKMSDRM(_GLFWmonitor *monitor, GLFWvidmode *mode){
+    *mode = _glfw.monitors[0]->modes[0];
+    return GLFW_TRUE;
+}
+
+void _glfwSetWindowIconKMSDRM(_GLFWwindow *window, int count, const GLFWimage *images){
+    debug_puts("_glfwSetWindowIconKMSDRM not implemented");
+}
 #endif
 
