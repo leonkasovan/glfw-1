@@ -237,23 +237,44 @@ void _glfwDestroyWindowKMSDRM(_GLFWwindow* window) {
 }
 
 void _glfwGetFramebufferSizeKMSDRM(_GLFWwindow* window, int* width, int* height) {
-    // puts("_glfwGetFramebufferSizeKMSDRM");
     if (width)
-        *width = _glfw.kmsdrm.gbm.width; // *width = 640; //window->wl.fbWidth;
+        *width = _glfw.kmsdrm.gbm.width;
     if (height)
-        *height = _glfw.kmsdrm.gbm.height; // *height = 480; //window->wl.fbHeight;
+        *height = _glfw.kmsdrm.gbm.height;
 }
 
 void _glfwPollEventsKMSDRM(void) {
     double timeout = 0.0;
     handleEvents(&timeout);
-    // #if defined(GLFW_BUILD_LINUX_KEYBOARD)
-    //     for (int jid = 0; jid <= GLFW_KEYBOARD_LAST; jid++) {
-    //         _GLFWkeyboard* js = _glfw.keyboards + jid;
-    //         if (js->connected)
-    //             _glfwPollKeyboardLinux(js, _GLFW_POLL_ALL);
-    //     }
-    // #endif    
 }
+
+void _glfwSetWindowDecoratedKMSDRM(_GLFWwindow* window, GLFWbool enabled){
+    debug_printf("_glfwSetWindowDecoratedKMSDRM not implemented\n\tenabled=%d\n", enabled);
+}
+
+void _glfwSetWindowPosKMSDRM(_GLFWwindow* window, int xpos, int ypos){
+    debug_printf("_glfwSetWindowPosKMSDRM not implemented\n\txpos=%d\n\typos=%d\n", xpos, ypos);
+}
+void _glfwGetWindowPosKMSDRM(_GLFWwindow* window, int* xpos, int* ypos){
+    if (xpos)
+        *xpos = 0;
+    if (ypos)
+        *ypos = 0;
+}
+
+void _glfwSetWindowSizeKMSDRM(_GLFWwindow* window, int width, int height){
+    debug_printf("_glfwSetWindowSizeKMSDRM not implemented\n\twidth=%d\n\theight=%d\n", width, height);
+}
+void _glfwGetWindowSizeKMSDRM(_GLFWwindow* window, int* width, int* height){
+    if (width)
+        *width = _glfw.kmsdrm.gbm.width;
+    if (height)
+        *height = _glfw.kmsdrm.gbm.height;
+}
+
+void _glfwSetCursorModeKMSDRM(_GLFWwindow* window, int mode){
+    debug_printf("_glfwSetCursorModeKMSDRM not implemented\n\tmode=%d\n", mode);
+}
+
 #endif
 

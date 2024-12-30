@@ -373,6 +373,13 @@ int init_drm(struct drm* drm, const char* device, const char* mode_str, int conn
     if (!drm->mode) {
         _glfwInputError(GLFW_PLATFORM_ERROR, "init_drm: could not find mode!");
         return -1;
+    } else {    // add current_mode to _GLFWmonitor* monitor.mode[0]
+        // _glfw.current_monitor.mode[0] = current_mode;
+        _glfw.current_mode.width = current_mode.width;
+        _glfw.current_mode.height = current_mode.height;
+        _glfw.current_mode.refresh = current_mode.refresh;
+        _glfw.current_monitor.modeCount = 1;
+        _glfw.current_monitor.modes = &_glfw.current_mode;
     }
 
     /* find encoder: */
@@ -597,7 +604,7 @@ GLFWbool _glfwConnectKMSDRM(int platformID, _GLFWplatform* platform) {
         // .getScancodeName = _glfwGetScancodeNameKMSDRM,
         // .getKeyScancode = _glfwGetKeyScancodeKMSDRM,
         // .setClipboardString = _glfwSetClipboardStringKMSDRM,
-        // .getClipboardString = _glfwGetClipboardStringKMSDRM,
+        .getClipboardString = _glfwGetClipboardStringKMSDRM,
 #if defined(GLFW_BUILD_LINUX_JOYSTICK)
         .initJoysticks = _glfwInitJoysticksLinux,
         .terminateJoysticks = _glfwTerminateJoysticksLinux,
@@ -615,18 +622,18 @@ GLFWbool _glfwConnectKMSDRM(int platformID, _GLFWplatform* platform) {
         .getMonitorPos = _glfwGetMonitorPosKMSDRM,
         .getMonitorContentScale = _glfwGetMonitorContentScaleKMSDRM,
         .getMonitorWorkarea = _glfwGetMonitorWorkareaKMSDRM,
-        // .getVideoModes = _glfwGetVideoModesKMSDRM,
-        // .getVideoMode = _glfwGetVideoModeKMSDRM,
+        .getVideoModes = _glfwGetVideoModesKMSDRM,
+        .getVideoMode = _glfwGetVideoModeKMSDRM,
         // .getGammaRamp = _glfwGetGammaRampKMSDRM,
         // .setGammaRamp = _glfwSetGammaRampKMSDRM,
         .createWindow = _glfwCreateWindowKMSDRM,
         .destroyWindow = _glfwDestroyWindowKMSDRM,
         // .setWindowTitle = _glfwSetWindowTitleKMSDRM,
-        // .setWindowIcon = _glfwSetWindowIconKMSDRM,
-        // .getWindowPos = _glfwGetWindowPosKMSDRM,
-        // .setWindowPos = _glfwSetWindowPosKMSDRM,
-        // .getWindowSize = _glfwGetWindowSizeKMSDRM,
-        // .setWindowSize = _glfwSetWindowSizeKMSDRM,
+        .setWindowIcon = _glfwSetWindowIconKMSDRM,
+        .getWindowPos = _glfwGetWindowPosKMSDRM,
+        .setWindowPos = _glfwSetWindowPosKMSDRM,
+        .getWindowSize = _glfwGetWindowSizeKMSDRM,
+        .setWindowSize = _glfwSetWindowSizeKMSDRM,
         // .setWindowSizeLimits = _glfwSetWindowSizeLimitsKMSDRM,
         // .setWindowAspectRatio = _glfwSetWindowAspectRatioKMSDRM,
         .getFramebufferSize = _glfwGetFramebufferSizeKMSDRM,
@@ -648,7 +655,7 @@ GLFWbool _glfwConnectKMSDRM(int platformID, _GLFWplatform* platform) {
         // .framebufferTransparent = _glfwFramebufferTransparentKMSDRM,
         // .getWindowOpacity = _glfwGetWindowOpacityKMSDRM,
         // .setWindowResizable = _glfwSetWindowResizableKMSDRM,
-        // .setWindowDecorated = _glfwSetWindowDecoratedKMSDRM,
+        .setWindowDecorated = _glfwSetWindowDecoratedKMSDRM,
         // .setWindowFloating = _glfwSetWindowFloatingKMSDRM,
         // .setWindowOpacity = _glfwSetWindowOpacityKMSDRM,
         // .setWindowMousePassthrough = _glfwSetWindowMousePassthroughKMSDRM,
