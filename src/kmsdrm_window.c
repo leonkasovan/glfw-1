@@ -293,5 +293,215 @@ GLFWbool _glfwGetVideoModeKMSDRM(_GLFWmonitor *monitor, GLFWvidmode *mode){
 void _glfwSetWindowIconKMSDRM(_GLFWwindow *window, int count, const GLFWimage *images){
     debug_puts("_glfwSetWindowIconKMSDRM not implemented");
 }
-#endif
 
+GLFWbool _glfwGetGammaRampKMSDRM(_GLFWmonitor *monitor, GLFWgammaramp *ramp){
+    debug_puts("_glfwGetGammaRampKMSDRM not implemented");
+    return GLFW_FALSE;
+}
+
+void _glfwSetGammaRampKMSDRM(_GLFWmonitor *monitor, const GLFWgammaramp *ramp){
+    debug_puts("_glfwSetGammaRampKMSDRM not implemented");
+}
+
+void _glfwSetWindowTitleKMSDRM(_GLFWwindow *window, const char *title){
+    debug_printf("_glfwSetWindowTitleKMSDRM not implemented title=%s\n", title);
+}
+
+void _glfwSetWindowSizeLimitsKMSDRM(_GLFWwindow *window, int minwidth, int minheight, int maxwidth, int maxheight){
+    debug_printf("_glfwSetWindowSizeLimitsKMSDRM not implemented minwidth=%d, minheight=%d, maxwidth=%d maxheight=%d\n", minwidth, minheight, maxwidth, maxheight);
+}
+
+void _glfwSetWindowAspectRatioKMSDRM(_GLFWwindow *window, int n, int d){
+    debug_printf("_glfwSetWindowAspectRatioKMSDRM not implemented n=%d d=%d\n", n, d);
+}
+
+void _glfwGetWindowFrameSizeKMSDRM(_GLFWwindow *window, int *left, int *top, int *right, int *bottom){
+    *left = 0;
+    *top = 0;
+    *right = _glfw.kmsdrm.gbm.width;
+    *bottom = _glfw.kmsdrm.gbm.height;
+    debug_printf("_glfwGetWindowFrameSizeKMSDRM not implemented\n");
+}
+
+void _glfwGetWindowContentScaleKMSDRM(_GLFWwindow *window, float *xscale, float *yscale){
+    *xscale = 1.0;
+    *yscale = 1.0;
+    debug_printf("_glfwGetWindowContentScaleKMSDRM not implemented\n");
+}
+
+void _glfwRestoreWindowKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwRestoreWindowKMSDRM not implemented");
+}
+
+void _glfwMaximizeWindowKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwMaximizeWindowKMSDRM not implemented");
+}
+
+void _glfwShowWindowKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwShowWindowKMSDRM not implemented");
+}
+
+void _glfwHideWindowKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwHideWindowKMSDRM not implemented");
+}
+
+void _glfwFocusWindowKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwFocusWindowKMSDRM not implemented");
+}
+
+GLFWbool _glfwWindowFocusedKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwWindowFocusedKMSDRM not implemented");
+    return GLFW_FALSE;
+}
+
+GLFWbool _glfwWindowIconifiedKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwWindowIconifiedKMSDRM not implemented");
+    return GLFW_FALSE;
+}
+
+GLFWbool _glfwWindowVisibleKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwWindowVisibleKMSDRM not implemented");
+    return GLFW_FALSE;
+}
+
+void _glfwIconifyWindowKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwIconifyWindowKMSDRM not implemented");
+}
+
+void _glfwSetWindowMonitorKMSDRM(_GLFWwindow *window, _GLFWmonitor *monitor, int xpos, int ypos, int width, int height, int refreshRate){
+    debug_puts("_glfwSetWindowMonitorKMSDRM not implemented");
+}
+
+// void _glfwPollMonitorsKMSDRM(void){
+//     debug_puts("_glfwPollMonitorsKMSDRM not implemented");
+// }
+
+// GLFWbool _glfwDetectMonitorsKMSDRM(void){
+//     debug_puts("_glfwDetectMonitorsKMSDRM not implemented");
+//     return GLFW_FALSE;
+// }
+
+// void _glfwFreeMonitorKMSDRM(_GLFWmonitor *monitor){
+//     debug_puts("_glfwFreeMonitorKMSDRM not implemented");
+// }
+
+// void _glfwGetMonitorContentScaleKMSDRM(_GLFWmonitor *monitor, float *xscale, float *yscale){
+//     debug_puts("_glfwGetMonitorContentScaleKMSDRM not implemented");
+// }
+
+// void _glfwGetMonitorWorkareaKMSDRM(_GLFWmonitor *monitor, int *xpos, int *ypos, int *width, int *height){
+//     debug_puts("_glfwGetMonitorWorkareaKMSDRM not implemented");
+// }
+
+void _glfwSetWindowResizableKMSDRM(_GLFWwindow *window, GLFWbool enabled){
+    debug_puts("_glfwSetWindowResizableKMSDRM not implemented");
+}
+
+void _glfwSetWindowFloatingKMSDRM(_GLFWwindow *window, GLFWbool enabled){
+    debug_puts("_glfwSetWindowFloatingKMSDRM not implemented");
+}
+
+void _glfwSetWindowMousePassthroughKMSDRM(_GLFWwindow *window, GLFWbool enabled){
+    debug_puts("_glfwSetWindowMousePassthroughKMSDRM not implemented");
+}
+
+float _glfwGetWindowOpacityKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwGetWindowOpacityKMSDRM not implemented");
+    return 1.0;
+}
+
+void _glfwSetWindowOpacityKMSDRM(_GLFWwindow *window, float opacity){
+    debug_puts("_glfwSetWindowOpacityKMSDRM not implemented");
+}
+
+void _glfwSetRawMouseMotionKMSDRM(_GLFWwindow *window, GLFWbool enabled){
+    debug_puts("_glfwSetRawMouseMotionKMSDRM not implemented");
+}
+
+GLFWbool _glfwRawMouseMotionSupportedKMSDRM(void){
+    debug_puts("_glfwRawMouseMotionSupportedKMSDRM not implemented");
+    return GLFW_FALSE;
+}
+
+void _glfwRequestWindowAttentionKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwRequestWindowAttentionKMSDRM not implemented");
+}
+
+GLFWbool _glfwWindowMaximizedKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwWindowMaximizedKMSDRM not implemented");
+    return GLFW_FALSE;
+}
+
+GLFWbool _glfwWindowHoveredKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwWindowHoveredKMSDRM not implemented");
+    return GLFW_FALSE;
+}
+
+GLFWbool _glfwFramebufferTransparentKMSDRM(_GLFWwindow *window){
+    debug_puts("_glfwFramebufferTransparentKMSDRM not implemented");
+    return GLFW_FALSE;
+}
+
+void _glfwWaitEventsKMSDRM(void){
+    double timeout = -1.0;
+    handleEvents(&timeout);
+}
+
+void _glfwWaitEventsTimeoutKMSDRM(double timeout){
+    handleEvents(&timeout);
+}
+
+void _glfwPostEmptyEventKMSDRM(void){
+    debug_puts("_glfwPostEmptyEventKMSDRM not implemented");
+}
+
+void _glfwGetRequiredInstanceExtensionsKMSDRM(char **extensions){
+    debug_puts("_glfwGetRequiredInstanceExtensionsKMSDRM not implemented");
+}
+
+GLFWbool _glfwGetPhysicalDevicePresentationSupportKMSDRM(VkInstance instance, VkPhysicalDevice device, uint32_t queuefamily){
+    debug_puts("_glfwGetPhysicalDevicePresentationSupportKMSDRM not implemented");
+    return GLFW_FALSE;
+}
+
+VkResult _glfwCreateWindowSurfaceKMSDRM(VkInstance instance, _GLFWwindow *window, const VkAllocationCallbacks *allocator, VkSurfaceKHR *surface){
+    debug_puts("_glfwCreateWindowSurfaceKMSDRM not implemented");
+    return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
+
+void _glfwGetCursorPosKMSDRM(_GLFWwindow *window, double *xpos, double *ypos){
+    debug_puts("_glfwGetCursorPosKMSDRM not implemented");
+}
+
+void _glfwSetCursorPosKMSDRM(_GLFWwindow *window, double x, double y){
+    debug_puts("_glfwSetCursorPosKMSDRM not implemented");
+}
+
+GLFWbool _glfwCreateCursorKMSDRM(_GLFWcursor *cursor, const GLFWimage *image, int xhot, int yhot){
+    debug_puts("_glfwCreateCursorKMSDRM not implemented");
+    return GLFW_FALSE;
+}
+GLFWbool _glfwCreateStandardCursorKMSDRM(_GLFWcursor *cursor, int shape){
+    debug_puts("_glfwCreateStandardCursorKMSDRM not implemented");
+    return GLFW_FALSE;
+}
+void _glfwDestroyCursorKMSDRM(_GLFWcursor *cursor){
+    debug_puts("_glfwDestroyCursorKMSDRM not implemented");
+}
+void _glfwSetCursorKMSDRM(_GLFWwindow *window, _GLFWcursor *cursor){
+    debug_puts("_glfwSetCursorKMSDRM not implemented");
+}
+void _glfwSetClipboardStringKMSDRM(const char *string){
+    debug_puts("_glfwSetClipboardStringKMSDRM not implemented");
+}
+
+const char *_glfwGetScancodeNameKMSDRM(int scancode){
+    debug_puts("_glfwGetScancodeNameKMSDRM not implemented");
+    return "";
+}
+int _glfwGetKeyScancodeKMSDRM(int key){
+    debug_puts("_glfwGetKeyScancodeKMSDRM not implemented");
+    return 0;
+}
+
+#endif

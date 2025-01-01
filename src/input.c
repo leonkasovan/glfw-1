@@ -498,47 +498,6 @@ void _glfwFreeJoystick(_GLFWjoystick* js) {
     memset(js, 0, sizeof(_GLFWjoystick));
 }
 
-// Returns an available keyboard object with arrays and name allocated
-//
-_GLFWkeyboard* _glfwAllocKeyboard(const char* name,
-    const char* guid,
-    int axisCount,
-    int buttonCount,
-    int hatCount) {
-    int jid;
-    _GLFWkeyboard* js;
-
-    for (jid = 0; jid <= GLFW_KEYBOARD_LAST; jid++) {
-        if (!_glfw.keyboards[jid].allocated)
-            break;
-    }
-
-    if (jid > GLFW_KEYBOARD_LAST)
-        return NULL;
-
-    js = _glfw.keyboards + jid;
-    js->allocated = GLFW_TRUE;
-    js->axes = _glfw_calloc(axisCount, sizeof(float));
-    js->buttons = _glfw_calloc(buttonCount + (size_t) hatCount * 4, 1);
-    js->hats = _glfw_calloc(hatCount, 1);
-    js->axisCount = axisCount;
-    js->buttonCount = buttonCount;
-    js->hatCount = hatCount;
-
-    strncpy(js->name, name, sizeof(js->name) - 1);
-    strncpy(js->guid, guid, sizeof(js->guid) - 1);
-    return js;
-}
-
-// Frees arrays and name and flags the keyboard object as unused
-//
-void _glfwFreeKeyboard(_GLFWkeyboard* js) {
-    _glfw_free(js->axes);
-    _glfw_free(js->buttons);
-    _glfw_free(js->hats);
-    memset(js, 0, sizeof(_GLFWkeyboard));
-}
-
 // Center the cursor in the content area of the specified window
 //
 void _glfwCenterCursorInContentArea(_GLFWwindow* window) {

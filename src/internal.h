@@ -996,12 +996,6 @@ _GLFWjoystick* _glfwAllocJoystick(const char* name,
     int hatCount);
 void _glfwFreeJoystick(_GLFWjoystick* js);
 void _glfwCenterCursorInContentArea(_GLFWwindow* window);
-_GLFWkeyboard* _glfwAllocKeyboard(const char* name,
-    const char* guid,
-    int axisCount,
-    int buttonCount,
-    int hatCount);
-void _glfwFreeKeyboard(_GLFWkeyboard* js);
 
 GLFWbool _glfwInitEGL(void);
 void _glfwTerminateEGL(void);
