@@ -788,6 +788,11 @@ struct _GLFWlibrary {
     _GLFWmonitor** monitors;
     int                 monitorCount;
 
+#ifdef DEBUG
+    // int64_t start_time;
+    int64_t report_time;
+#endif
+
     GLFWbool            joysticksInitialized;
     _GLFWjoystick       joysticks[GLFW_JOYSTICK_LAST + 1];
     _GLFWmapping* mappings;

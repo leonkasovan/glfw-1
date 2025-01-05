@@ -75,11 +75,9 @@ GLFWbool _glfwSelectPlatform(int desiredID, _GLFWplatform* platform) {
         return GLFW_FALSE;
     }
 
-    // Only allow the Null platform if specifically requested
-    if (desiredID == GLFW_PLATFORM_NULL)
-        return _glfwConnectNull(desiredID, platform);
-    else if (count == 0) {
-        _glfwInputError(GLFW_PLATFORM_UNAVAILABLE, "This binary only supports the Null platform sizeof(supportedPlatforms)=%ld", sizeof(supportedPlatforms));
+    // Count the number of available platforms
+    if (count == 0) {
+        _glfwInputError(GLFW_PLATFORM_UNAVAILABLE, "This binary DOES NOT supports any platform");
         return GLFW_FALSE;
     }
 

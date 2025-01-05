@@ -541,8 +541,8 @@ GLFWbool _glfwInitKMSDRM(void) {
     strncpy(_glfw.kmsdrm.mode_str, "", DRM_DISPLAY_MODE_LEN);
     _glfw.kmsdrm.drm.mode = NULL;
 #ifdef DEBUG    
-    _glfw.kmsdrm.start_time = get_time_ns();
-    _glfw.kmsdrm.report_time = get_time_ns();
+    // _glfw.start_time = get_time_ns();
+    _glfw.report_time = get_time_ns();
 #endif    
 
     createKeyTables();
@@ -581,6 +581,7 @@ void _glfwTerminateKMSDRM(void) {
     _glfwTerminateJoysticksLinux();
     if (_glfw.kmsdrm.drm.fd >= 0)
         close(_glfw.kmsdrm.drm.fd);
+    debug_printf("_glfwTerminateKMSDRM: Terminating DRM fd=%d [OK]\n", _glfw.kmsdrm.drm.fd);
 }
 
 //////////////////////////////////////////////////////////////////////////

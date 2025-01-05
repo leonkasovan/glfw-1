@@ -16,14 +16,6 @@
 #include "posix_poll.h"
 
 #define WEAK __attribute__((weak))
-#ifdef DEBUG
-#define debug_puts puts
-#define debug_printf printf
-#else
-#define debug_puts(x) ((void)0)
-#define debug_printf(...) ((void)0)
-#endif
-
 // #define GLFW_KMSDRM_WINDOW_STATE          _GLFWwindowKMSDRM kmsdrm;
 // #define GLFW_KMSDRM_LIBRARY_WINDOW_STATE  _GLFWlibraryKMSDRM kmsdrm;
 // #define GLFW_KMSDRM_MONITOR_STATE         _GLFWmonitorKMSDRM kmsdrm;
@@ -103,12 +95,6 @@ int create_program(const char* vs_src, const char* fs_src);
 int link_program(unsigned program);
 struct drm_fb* drm_fb_get_from_bo(struct gbm_bo* bo);
 
-#define NSEC_PER_SEC (INT64_C(1000) * USEC_PER_SEC)
-#define USEC_PER_SEC (INT64_C(1000) * MSEC_PER_SEC)
-#define MSEC_PER_SEC INT64_C(1000)
-
-int64_t get_time_ns(void);
-
 // KMS-specific global data
 //
 typedef struct _GLFWlibraryKMSDRM {
@@ -133,10 +119,6 @@ typedef struct _GLFWlibraryKMSDRM {
     int keyboard_fd;
     _GLFWwindow* window;
     short int keycodes[256];
-#ifdef DEBUG
-    int64_t start_time;
-    int64_t report_time;
-#endif
 } _GLFWlibraryKMSDRM;
 
 // Functions for initializing, terminating, and managing the KMSDRM platform

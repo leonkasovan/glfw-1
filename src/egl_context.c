@@ -345,16 +345,6 @@ static void swapBuffersEGL(_GLFWwindow* window) {
         drmHandleEvent(_glfw.kmsdrm.drm.fd, &evctx);
     }
 
-#ifdef DEBUG
-    int64_t cur_time = get_time_ns();
-    if (cur_time > (_glfw.kmsdrm.report_time + 2 * NSEC_PER_SEC)) {
-        debug_printf("[GLFW] Rendered %u fps\n", frame);
-        _glfw.kmsdrm.report_time = cur_time;
-        frame = 0;
-    }
-    frame++;
-#endif
-
     /* release last buffer to render on again: */
     if (_glfw.kmsdrm.gbm.surface) {
         // debug_printf("swapBufferEGL: gbm_surface_release_buffer gbm.surface=%p\n", _glfw.kmsdrm.gbm.surface);
@@ -363,6 +353,17 @@ static void swapBuffersEGL(_GLFWwindow* window) {
     _glfw.kmsdrm.gbm.bo = next_bo;
 #else
     eglSwapBuffers(_glfw.egl.display, window->context.egl.surface);
+#endif
+
+#ifdef DEBUG
+    int64_t cur_time = get_time_ns();
+    if (cur_time > (_glfw.report_time + 2 * NSEC_PER_SEC))
+    {
+        debug_printf("[GLFW] Render %u fps\n", frame);
+        _glfw.report_time = cur_time;
+        frame = 0;
+    }
+    frame++;
 #endif
 }
 

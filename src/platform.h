@@ -38,6 +38,19 @@
 #error "You must not define these; define zero or more _GLFW_<platform> macros instead"
 #endif
 
+#ifdef DEBUG
+#define debug_puts puts
+#define debug_printf printf
+#else
+#define debug_puts(x) ((void)0)
+#define debug_printf(...) ((void)0)
+#endif
+
+#define NSEC_PER_SEC (INT64_C(1000) * USEC_PER_SEC)
+#define USEC_PER_SEC (INT64_C(1000) * MSEC_PER_SEC)
+#define MSEC_PER_SEC INT64_C(1000)
+int64_t get_time_ns(void);
+
 #include "null_platform.h"
 #define GLFW_EXPOSE_NATIVE_EGL
 #define GLFW_EXPOSE_NATIVE_OSMESA
