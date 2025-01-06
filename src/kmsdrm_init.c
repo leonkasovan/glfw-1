@@ -47,6 +47,44 @@ return GLFW_FALSE;
 
 #if defined(_GLFW_KMSDRM)
 
+// Add a function to count the number of open files for a given PID
+#define MAX_PATH 1024
+int count_open_files()
+{
+    char path[MAX_PATH];
+    struct dirent *entry;
+    DIR *dir;
+    int count = 0;
+
+    // Build the path to the /proc/[pid]/fd/ directory
+    snprintf(path, sizeof(path), "/proc/%d/fd/", getpid());
+
+    // Open the directory
+    dir = opendir(path);
+    if (dir == NULL)
+    {
+        perror("Failed to open directory");
+        return -1;
+    }
+
+    // Read each entry in the /proc/[pid]/fd/ directory
+    while ((entry = readdir(dir)) != NULL)
+    {
+        // Skip '.' and '..'
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+        {
+            continue;
+        }
+
+        count++;
+    }
+
+    // Close the directory
+    closedir(dir);
+
+    return count;
+}
+
 static void createKeyTables(void) {
     memset(_glfw.kmsdrm.keycodes, -1, sizeof(_glfw.kmsdrm.keycodes));
     // memset(_glfw.kmsdrm.scancodes, -1, sizeof(_glfw.kmsdrm.scancodes));
@@ -424,7 +462,7 @@ static void drm_fb_destroy_callback(struct gbm_bo* bo, void* data) {
 }
 
 struct drm_fb* drm_fb_get_from_bo(struct gbm_bo* bo) {
-    // debug_printf("drm_fb_get_from_bo: gbm_device_get_fd gbm_bo_get_device gbm_bo_get_user_data bo=%p\n", bo);
+    // debug_printf("%d drm_fb_get_from_bo: gbm_device_get_fd gbm_bo_get_device gbm_bo_get_user_data bo=%p\n", count_open_files(), bo);
     struct drm_fb* fb = gbm_bo_get_user_data(bo);
     uint32_t width, height, format,
         strides[4] = { 0 }, handles[4] = { 0 },
@@ -463,7 +501,7 @@ struct drm_fb* drm_fb_get_from_bo(struct gbm_bo* bo) {
         flags = DRM_MODE_FB_MODIFIERS;
     }
 
-    // debug_printf("drm_fb_get_from_bo: drmModeAddFB2WithModifiers drm_fd=%d width=%d height=%d format=%d modifiers={%lu,%lu,%lu,%lu} fb.fb_id=%d flags=%d\n", drm_fd, width, height, format, modifiers[0], modifiers[1], modifiers[2], modifiers[3], fb->fb_id, flags);
+    // debug_printf("%d drm_fb_get_from_bo: drmModeAddFB2WithModifiers drm_fd=%d width=%d height=%d format=%d modifiers={%lu,%lu,%lu,%lu} fb.fb_id=%d flags=%d\n", count_open_files(), drm_fd, width, height, format, modifiers[0], modifiers[1], modifiers[2], modifiers[3], fb->fb_id, flags);
     ret = drmModeAddFB2WithModifiers(drm_fd, width, height, format, handles, strides, offsets, modifiers, &fb->fb_id, flags);
     // }
 
@@ -483,7 +521,7 @@ struct drm_fb* drm_fb_get_from_bo(struct gbm_bo* bo) {
         free(fb);
         return NULL;
     }
-    // debug_puts("drm_fb_get_from_bo: gbm_bo_set_user_data");
+    // debug_printf("%d drm_fb_get_from_bo: gbm_bo_set_user_data", count_open_files());
     gbm_bo_set_user_data(bo, fb, drm_fb_destroy_callback);
     return fb;
 }

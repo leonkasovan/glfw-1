@@ -298,19 +298,19 @@ static void swapBuffersEGL(_GLFWwindow* window) {
     int ret;
 
     if (_glfw.kmsdrm.gbm.surface) {
-        // debug_printf("swapBufferEGL: eglSwapBuffers egl.display=%p egl.surface=%p\n", _glfw.egl.display, window->context.egl.surface);
+        // debug_printf("%d swapBufferEGL: eglSwapBuffers egl.display=%p egl.surface=%p\n", count_open_files(), _glfw.egl.display, window->context.egl.surface);
         if (!eglSwapBuffers(_glfw.egl.display, window->context.egl.surface)) {
             _glfwInputError(GLFW_PLATFORM_ERROR, "swapBufferEGL: eglSwapBuffers error.");
             return;
         }
-        // debug_printf("swapBufferEGL: gbm_surface_lock_front_buffer gbm.surface=%p\n", _glfw.kmsdrm.gbm.surface);
+        // debug_printf("%d swapBufferEGL: gbm_surface_lock_front_buffer gbm.surface=%p\n", count_open_files(), _glfw.kmsdrm.gbm.surface);
         next_bo = gbm_surface_lock_front_buffer(_glfw.kmsdrm.gbm.surface);
         if (!next_bo) {
             _glfwInputError(GLFW_PLATFORM_ERROR, "swapBufferEGL: gbm_surface_lock_front_buffer error.");
             return;
         }
     }
-    // debug_printf("swapBufferEGL: drm_fb_get_from_bo next_bo=%p\n", next_bo);
+    // debug_printf("%d swapBufferEGL: drm_fb_get_from_bo next_bo=%p\n", count_open_files(), next_bo);
     _glfw.kmsdrm.gbm.fb = drm_fb_get_from_bo(next_bo);
     if (!_glfw.kmsdrm.gbm.fb) {
         _glfwInputError(GLFW_PLATFORM_ERROR, "swapBufferEGL: Failed to get a new framebuffer BO");
@@ -318,7 +318,7 @@ static void swapBuffersEGL(_GLFWwindow* window) {
     }
 
     // Here you could also update drm plane layers if you want hw composition
-    // debug_printf("swapBufferEGL: drmModePageFlip drm.fd=%d drm.crtc_id=%d fb.fb_id=%d\n", _glfw.kmsdrm.drm.fd, _glfw.kmsdrm.drm.crtc_id, _glfw.kmsdrm.gbm.fb->fb_id);
+    // debug_printf("%d swapBufferEGL: drmModePageFlip drm.fd=%d drm.crtc_id=%d fb.fb_id=%d\n", count_open_files(), _glfw.kmsdrm.drm.fd, _glfw.kmsdrm.drm.crtc_id, _glfw.kmsdrm.gbm.fb->fb_id);
     ret = drmModePageFlip(_glfw.kmsdrm.drm.fd, _glfw.kmsdrm.drm.crtc_id, _glfw.kmsdrm.gbm.fb->fb_id, DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
     if (ret) {
         _glfwInputError(GLFW_PLATFORM_ERROR, "swapBufferEGL: Failed to queue page flip");
@@ -341,13 +341,13 @@ static void swapBuffersEGL(_GLFWwindow* window) {
             _glfwInputError(GLFW_PLATFORM_ERROR, "swapBufferEGL: user interrupted!");
             return;
         }
-        // debug_printf("swapBufferEGL: drmHandleEvent drm.fd=%d\n", _glfw.kmsdrm.drm.fd);
+        // debug_printf("%d swapBufferEGL: drmHandleEvent drm.fd=%d\n", count_open_files(), _glfw.kmsdrm.drm.fd);
         drmHandleEvent(_glfw.kmsdrm.drm.fd, &evctx);
     }
 
     /* release last buffer to render on again: */
     if (_glfw.kmsdrm.gbm.surface) {
-        // debug_printf("swapBufferEGL: gbm_surface_release_buffer gbm.surface=%p\n", _glfw.kmsdrm.gbm.surface);
+        // debug_printf("%d swapBufferEGL: gbm_surface_release_buffer gbm.surface=%p\n", count_open_files(), _glfw.kmsdrm.gbm.surface);
         gbm_surface_release_buffer(_glfw.kmsdrm.gbm.surface, _glfw.kmsdrm.gbm.bo);
     }
     _glfw.kmsdrm.gbm.bo = next_bo;
@@ -359,7 +359,7 @@ static void swapBuffersEGL(_GLFWwindow* window) {
     int64_t cur_time = get_time_ns();
     if (cur_time > (_glfw.report_time + 2 * NSEC_PER_SEC))
     {
-        debug_printf("[GLFW] Render %u fps\n", frame);
+        debug_printf("Render %u fps\n", frame);
         _glfw.report_time = cur_time;
         frame = 0;
     }
