@@ -43,11 +43,6 @@ GLFWbool _glfwPollPOSIX(struct pollfd* fds, nfds_t count, double* timeout)
             const uint64_t base = _glfwPlatformGetTimerValue();
 
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__CYGWIN__)
-            extern int ppoll(struct pollfd* __fds, nfds_t __nfds,
-                const struct timespec* __timeout,
-                const __sigset_t * __ss)
-                __fortified_attr_access(__write_only__, 1, 2);
-            
             const time_t seconds = (time_t) *timeout;
             const long nanoseconds = (long) ((*timeout - seconds) * 1e9);
             const struct timespec ts = { seconds, nanoseconds };
