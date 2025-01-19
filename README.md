@@ -66,6 +66,11 @@ more information about how to compile GLFW yourself.
 
 ```
 cmake -B build -D GLFW_BUILD_X11=0 -D GLFW_BUILD_WAYLAND=0 -D GLFW_BUILD_KMSDRM=1 .
+
+# update gamepad mapping => mappings.h
+make -j8 -C build update_mappings
+
+# build it
 make -j8 -C build
 ```
 

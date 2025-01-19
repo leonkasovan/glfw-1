@@ -10,6 +10,7 @@
         "vector": "c",
         "iterator": "c",
         "string_view": "c",
-        "glfw3.h": "c"
+        "glfw3.h": "c",
+        "nuklear_glfw_gl2.h": "c"
     }
 }

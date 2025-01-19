@@ -29,7 +29,7 @@
 //========================================================================
 
 #define GLAD_GL_IMPLEMENTATION
-#include <glad/gl.h>
+#include <glad/gles2.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
@@ -183,8 +183,11 @@ int main(void)
         exit(EXIT_FAILURE);
 
     glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
-    glfwWindowHint(GLFW_WIN32_KEYBOARD_MENU, GLFW_TRUE);
-
+	glfwWindowHint(GLFW_WIN32_KEYBOARD_MENU, GLFW_TRUE);
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
     window = glfwCreateWindow(0, 0, "Joystick Test", NULL, NULL);
     if (!window)
     {
@@ -193,8 +196,8 @@ int main(void)
     }
 
     glfwMakeContextCurrent(window);
-    gladLoadGL(glfwGetProcAddress);
-    glfwSwapInterval(1);
+	gladLoadGLES2(glfwGetProcAddress);
+	glfwSwapInterval(1);
 
     nk = nk_glfw3_init(window, NK_GLFW3_INSTALL_CALLBACKS);
     nk_glfw3_font_stash_begin(&atlas);
@@ -213,7 +216,8 @@ int main(void)
     {
         int i, width, height;
 
-        glfwGetWindowSize(window, &width, &height);
+		glfwGetWindowSize(window, &width, &height);
+		printf("window=%dx%d\n", width, height);
 
         glClear(GL_COLOR_BUFFER_BIT);
         nk_glfw3_new_frame();
