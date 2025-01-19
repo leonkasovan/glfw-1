@@ -125,7 +125,7 @@ int main(void) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-    GLFWwindow* window = glfwCreateWindow(0, 0, "OpenGL ES 2.0 Triangle (EGL)", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(640, 480, "OpenGL ES 2.0 Triangle (EGL)", NULL, NULL);
     if (!window) {
         // glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
         // printf("examples/triangle-opengles.c:%d: GLFW_NATIVE_CONTEXT_API\n", __LINE__);
@@ -185,13 +185,12 @@ int main(void) {
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
         sizeof(Vertex), (void*) offsetof(Vertex, col));
     // printf("examples/triangle-opengles.c: %d\n", __LINE__);
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    printf("window=%dx%d\n", width, height);
+    glViewport(0, 0, 480, 640);
     while (!glfwWindowShouldClose(window)) {
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        // printf("window=%dx%d\n", width, height);
         const float ratio = width / (float) height;
-
-        glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT);
 
         mat4x4 m, p, mvp;
