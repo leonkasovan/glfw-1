@@ -33,17 +33,6 @@
 #include <assert.h>
 #include <errno.h>
 
-// #ifdef _GLFW_KMSDRM
-// struct drm_fb* drm_fb_get_from_bo(struct gbm_bo* bo);
-// static void page_flip_handler(int fd, unsigned int frame, unsigned int sec, unsigned int usec, void* data) {
-//     (void) fd, (void) frame, (void) sec, (void) usec;
-
-//     int* waiting_for_flip = data;
-//     *waiting_for_flip = 0;
-//     _glfw.kmsdrm.drm.waiting_for_flip = 0;
-// }
-// #endif
-
 // Return a description of the specified EGL error
 //
 static const char* getEGLErrorString(EGLint error) {
@@ -87,7 +76,6 @@ static const char* getEGLErrorString(EGLint error) {
 //
 static int getEGLConfigAttrib(EGLConfig config, int attrib) {
     int value;
-    // debug_puts("eglGetConfigAttrib");
     eglGetConfigAttrib(_glfw.egl.display, config, attrib, &value);
     return value;
 }
@@ -240,7 +228,7 @@ static void makeContextCurrentEGL(_GLFWwindow* window) {
             return;
         }
     } else {
-        // debug_printf("makeContextCurrentEGL: eglMakeCurrent egl.display=%p egl.surface=EGL_NO_SURFACE egl.context=EGL_NO_CONTEXT\n", _glfw.egl.display);
+     // debug_printf("makeContextCurrentEGL: eglMakeCurrent egl.display=%p egl.surface=EGL_NO_SURFACE egl.context=EGL_NO_CONTEXT\n", _glfw.egl.display);
         if (!eglMakeCurrent(_glfw.egl.display,
             EGL_NO_SURFACE,
             EGL_NO_SURFACE,
@@ -263,15 +251,21 @@ static void page_flip_handler(int fd, unsigned int frame, unsigned int sec, unsi
     *waiting_for_flip = 0;
 }
 
+#ifdef DEBUG
+#ifdef __linux__
 int64_t get_time_ns(void) {
     struct timespec tv;
     clock_gettime(CLOCK_MONOTONIC, &tv);
     return tv.tv_nsec + tv.tv_sec * NSEC_PER_SEC;
 }
+#endif
+#endif
 
 static void swapBuffersEGL(_GLFWwindow* window) {
-#ifdef DEBUG    
+#ifdef DEBUG
+#ifdef __linux__
     static unsigned int frame = 0;
+#endif
 #endif
     if (window != _glfwPlatformGetTls(&_glfw.contextSlot)) {
         _glfwInputError(GLFW_PLATFORM_ERROR,
@@ -356,14 +350,15 @@ static void swapBuffersEGL(_GLFWwindow* window) {
 #endif
 
 #ifdef DEBUG
+#ifdef __linux__    
     int64_t cur_time = get_time_ns();
-    if (cur_time > (_glfw.report_time + 2 * NSEC_PER_SEC))
-    {
+    if (cur_time > (_glfw.report_time + 2 * NSEC_PER_SEC)) {
         debug_printf("Render %u fps\n", frame);
         _glfw.report_time = cur_time;
         frame = 0;
     }
     frame++;
+#endif
 #endif
 }
 
@@ -584,7 +579,7 @@ GLFWbool _glfwInitEGL(void) {
         _glfwTerminateEGL();
         return GLFW_FALSE;
     } else {
-        // printf("_glfwInitEGL: using EGL Library version %d.%d\n", major, minor);
+     // printf("_glfwInitEGL: using EGL Library version %d.%d\n", major, minor);
         debug_printf("\n===================================\n");
         printf("EGL information:\n");
         printf("  version: %s\n", eglQueryString(_glfw.egl.display, 0x3054));
@@ -792,7 +787,7 @@ GLFWbool _glfwCreateContextEGL(_GLFWwindow* window,
         // debug_printf("eglCreateWindowSurface(egl.display=%p, native=%p) => %p\n", _glfw.egl.display, native, window->context.egl.surface);
         // debug_printf("=====================================\n");
     } else if (_glfw.egl.platform == EGL_PLATFORM_SURFACELESS_MESA) {
-        // HACK: Use a pbuffer surface as the default framebuffer
+     // HACK: Use a pbuffer surface as the default framebuffer
         debug_puts("eglCreatePbufferSurface");
         window->context.egl.surface = eglCreatePbufferSurface(_glfw.egl.display, config, attribs);
     } else {
@@ -804,7 +799,7 @@ GLFWbool _glfwCreateContextEGL(_GLFWwindow* window,
         _glfwInputError(GLFW_PLATFORM_ERROR, "EGL: Failed to create window surface: %s", getEGLErrorString(eglGetError()));
         return GLFW_FALSE;
     } else {
-        // debug_printf("egl_context.c: Successfully create EGL Window Surface for Platform=0x%04X native=%p\n", _glfw.egl.platform, native);
+     // debug_printf("egl_context.c: Successfully create EGL Window Surface for Platform=0x%04X native=%p\n", _glfw.egl.platform, native);
     }
 
     window->context.egl.config = config;
@@ -981,4 +976,3 @@ GLFWAPI EGLSurface glfwGetEGLSurface(GLFWwindow* handle) {
 
     return window->context.egl.surface;
 }
-
