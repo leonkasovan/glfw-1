@@ -23,7 +23,9 @@
 //    distribution.
 //
 //========================================================================
-
+#ifndef WL_MARSHAL_FLAG_DESTROY
+#define WL_MARSHAL_FLAG_DESTROY (1 << 0)
+#endif
 #include <wayland-client-core.h>
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-compose.h>
@@ -42,6 +44,7 @@ typedef struct VkWaylandSurfaceCreateInfoKHR
 typedef VkResult (APIENTRY *PFN_vkCreateWaylandSurfaceKHR)(VkInstance,const VkWaylandSurfaceCreateInfoKHR*,const VkAllocationCallbacks*,VkSurfaceKHR*);
 typedef VkBool32 (APIENTRY *PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR)(VkPhysicalDevice,uint32_t,struct wl_display*);
 
+#include "xkb_unicode.h"
 #include "posix_poll.h"
 
 typedef int (* PFN_wl_display_flush)(struct wl_display* display);
